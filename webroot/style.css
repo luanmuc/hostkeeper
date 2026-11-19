@@ -507,11 +507,17 @@ p {
 }
 
 .hero-num .num {
-  background: linear-gradient(120deg, var(--num-from) 20%, var(--accent) 110%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
+  color: var(--text-1);
+}
+
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .hero-num .num {
+    background: linear-gradient(120deg, var(--num-from) 20%, var(--accent) 110%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
 }
 
 .hero-num .num.is-muted {

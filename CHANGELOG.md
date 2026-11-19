@@ -1,3 +1,21 @@
+## v1.0.3（R3，2026-11-19）
+
+- 修复 15 个 P2：安装/卸载退出码与数据保留、禁用状态不被 setup 改回、gzip 尺寸校验、空 extras、stage 原子提交、服务/调度进程身份、spawn 超时、规则提交回滚、源增删并发/回滚、repair pending 重建、内容未变收口、安装器退出码
+- 修复 15 个 P3：JSON C0 转义、日期/闰年校验、TLD 规则统一、源 ready 元数据、status 全字段转义、guard 子域、前端 URL userinfo、调度器文案、CGI 只收 POST/本地 Host、sum_check 返回值、元数据原子写、Private DNS 文案、管理器兼容说明、CSS @supports 兜底
+- 额外修复：`stage_commit` 误把 `extras.domains` 当普通源；`install_main` 无条件删 `SUMF`；dispatch 吞掉安装退出码；陈旧 checksum 被当匹配；诊断把 `sum_check=2` 当匹配；`source-del` 删除最后一行时 `grep -v` 返回 1 被误判；卸载备份缺失仍删数据
+- 新增 6 个函数：`proc_cmdline`、`pid_is_hostkeeper_serve`、`pid_is_httpd_for_run`、`stage_commit`、`sched_exit`、`restore_original_for_uninstall`
+- 回归：主机侧 P2/P3 36/36 PASS；P1 回归全通过；真机/模拟器矩阵仍未执行
+- versionCode 3 → 4
+
+## v1.0.2 维护修复（R2，2026-11-19，未升版）
+
+- 修复 HK-AUD-001：`repair_hosts deep` 不再把 2 行 hosts + 缺失 `SUMF` 当有效；优先按缓存重建，重建失败写 clean hosts 并把 `C_DOMAINS=0`/`C_SETUP=pending`；`mount_main` 改为 deep 修复
+- 修复 HK-AUD-002：`pipeline` 的 `up_to_date` 增加 `C_SETUP=ready`、`hosts_sane`、深度校验与 `sum_check`；截断 hosts 会进入重建
+- 修复 HK-AUD-003：锁目录写 pid 后校验；陈旧锁先移出再判定活进程；`lock_drop` 只删除自己的锁；新增 `lock_clear_stale` 供 `op_reconcile` 清理无主锁
+- 修复 HK-AUD-004：inplace hosts 写入改为同目录临时文件 + `cmp` + 原子 `mv`；失败不截断旧 hosts
+- 回归：隔离主机侧脚本；5 并发 disable 5/5、20 并发 status 20/20；详见本地维护记录
+- 说明：本轮为本地维护修复，不升版本；真机安装/挂载/重启/卸载仍未验证
+
 # HostKeeper v1.0.2
 
 - 安全加固：WebUI 页面增加 CSP；CGI 响应增加 CSP、CORP、Permissions-Policy；WebUI 运行目录与 `cgi-bin` 设为 0700

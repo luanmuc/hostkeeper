@@ -19,8 +19,8 @@ umask 022
 PATH=/system/bin:/system/xbin:/vendor/bin:${PATH:-/bin}
 export PATH
 
-HK_VER=v1.0.2
-HK_VCODE=3
+HK_VER=v1.0.3
+HK_VCODE=4
 SELF=$0
 case $SELF in /*) ;; *) SELF=$(pwd)/$SELF ;; esac
 MODDIR=${HK_MODDIR:-${SELF%/*}}
@@ -209,7 +209,13 @@ custom_ids() {
 }
 
 AWK_JESC='
-BEGIN { ORS = ""; printf "\"" }
+BEGIN {
+  ORS = ""; printf "\""
+  for (i = 1; i < 32; i++) {
+    c = sprintf("%c", i)
+    if (c != "\n" && c != "\r" && c != "\t") C0[c] = sprintf("\\u%04x", i)
+  }
+}
 {
   if (NR > 1) printf "\\n"
   s = $0; o = ""; n = length(s)
@@ -218,6 +224,7 @@ BEGIN { ORS = ""; printf "\"" }
     if (c == "\\") o = o "\\\\"
     else if (c == "\"") o = o "\\\""
     else if (c == "\t") o = o " "
+    else if (c in C0) o = o C0[c]
     else if (c != "\r") o = o c
   }
   printf "%s", o
@@ -275,13 +282,13 @@ function toolong(d,   n, i, L) {
   else next
   for (f = s; f <= NF; f++) {
     d = tolower($f)
-    if (d !~ /^([a-z0-9_]([a-z0-9_-]*[a-z0-9_])?\.)+[a-z]([a-z0-9-]*[a-z0-9])?$/) {
+    if (d !~ /^([a-z0-9_]([a-z0-9_-]*[a-z0-9_])?\.)+([a-z][a-z]+|xn--[a-z0-9]([a-z0-9-]*[a-z0-9])?)$/) {
       if (substr(d, length(d)) != ".") continue
       d = substr(d, 1, length(d) - 1)
-      if (d !~ /^([a-z0-9_]([a-z0-9_-]*[a-z0-9_])?\.)+[a-z]([a-z0-9-]*[a-z0-9])?$/) continue
+      if (d !~ /^([a-z0-9_]([a-z0-9_-]*[a-z0-9_])?\.)+([a-z][a-z]+|xn--[a-z0-9]([a-z0-9-]*[a-z0-9])?)$/) continue
     }
     if (seen[d]++) continue
-    if (length(d) > 63 && toolong(d)) continue
+    if (toolong(d)) continue
     if (d == "localhost.localdomain") continue
     print d
     n++
@@ -290,6 +297,12 @@ function toolong(d,   n, i, L) {
 END { print n + 0 > cntf }'
 
 AWK_COMPILE='
+function guarded(d,   n) {
+  n = length(G)
+  if (d == G) return 1
+  if (n > 0 && length(d) > n && substr(d, length(d) - n) == "." G) return 1
+  return 0
+}
 BEGIN {
   while ((getline l < allowf) > 0) {
     if (l == "") continue
@@ -321,7 +334,7 @@ plain {
 }
 {
   d = $0
-  if (d == G) { g = 1; next }
+  if (guarded(d)) { g = 1; next }
   if (nae && (d in A)) { na++; next }
   if (naw && ($NF in TL)) {
     s = d
@@ -464,6 +477,11 @@ dt == "" && x ~ /^[ \t]*[#!][ \t]*(date|last[ -]modified|last updated|updated)[ 
 END { print cnt; print dt }'
 
 AWK_DATE='
+function dim(y, m) {
+  if (m == 2) return (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? 29 : 28
+  if (m == 4 || m == 6 || m == 9 || m == 11) return 30
+  return 31
+}
 function civ(y, m, d,   era, yoe, doy, doe) {
   y -= (m <= 2)
   era = int((y >= 0 ? y : y - 399) / 400)
@@ -501,7 +519,7 @@ NR == 1 {
     else if ((substr(t, 1, 3) in MI) && !m) m = MI[substr(t, 1, 3)]
     else if (t ~ /^[+-][0-9][0-9][0-9][0-9]$/) off = (substr(t, 2, 2) * 3600 + substr(t, 4, 2) * 60) * (substr(t, 1, 1) == "-" ? -1 : 1)
   }
-  if (y < 1990 || m < 1 || m > 12 || d < 1 || d > 31 || hh > 23 || mm > 59) exit
+  if (y < 1990 || m < 1 || m > 12 || d < 1 || d > dim(y, m) || hh > 23 || mm > 59 || ss > 59) exit
   printf "%.0f\n", civ(y, m, d) * 86400 + hh * 3600 + mm * 60 + ss - off
   exit
 }'
@@ -625,7 +643,7 @@ log() {
 
 js() {
   case $1 in
-    *\\* | *\"* | *"$NL"* | *"$CR"* | *"$TAB"*) JS=$(printf '%s' "$1" | awk "$AWK_JESC") ;;
+    *\\* | *\"* | *"$NL"* | *"$CR"* | *"$TAB"* | *[[:cntrl:]]*) JS=$(printf '%s' "$1" | awk "$AWK_JESC") ;;
     *) JS="\"$1\"" ;;
   esac
 }
@@ -721,10 +739,21 @@ src_load() {
 }
 
 src_write() {
-  printf 'ETAG=%s\nSRCDATE=%s\nCOUNT=%s\nSIZE=%s\nFETCHED=%s\n' "$2" "$3" "$4" "$5" "$(now)" > "$1" 2>/dev/null
+  _sw_tmp="$1.tmp.$$"
+  rm -f "$_sw_tmp"
+  if printf 'ETAG=%s\nSRCDATE=%s\nCOUNT=%s\nSIZE=%s\nFETCHED=%s\n' "$2" "$3" "$4" "$5" "$(now)" > "$_sw_tmp" 2>/dev/null && mv -f "$_sw_tmp" "$1" 2>/dev/null; then
+    return 0
+  fi
+  rm -f "$_sw_tmp" 2>/dev/null
+  return 1
 }
 
-src_ready() { [ -s "$LISTSD/$1.domains" ]; }
+src_ready() {
+  [ -s "$LISTSD/$1.domains" ] || return 1
+  [ -f "$LISTSD/$1.info" ] || return 1
+  src_load "$1" || return 1
+  is_num "$S_COUNT" && [ "$S_COUNT" -gt 0 ]
+}
 
 src_file() {
   if [ -s "$STAGED/$1.domains" ]; then
@@ -776,10 +805,30 @@ lock_alive() {
 }
 
 lock_take() {
-  if mkdir "$1" 2>/dev/null; then echo "$$" > "$1/pid"; return 0; fi
+  if mkdir "$1" 2>/dev/null; then
+    if printf '%s\n' "$$" > "$1/pid" 2>/dev/null && [ "$(lock_pid "$1")" = "$$" ]; then
+      return 0
+    fi
+    [ -d "$1" ] && [ -z "$(lock_pid "$1")" ] && rm -rf "$1" 2>/dev/null
+    return 1
+  fi
   lock_alive "$1" && return 1
-  rm -rf "$1"
-  if mkdir "$1" 2>/dev/null; then echo "$$" > "$1/pid"; return 0; fi
+  _lt_stale="$1.stale.$$"
+  if mv -f "$1" "$_lt_stale" 2>/dev/null; then
+    if lock_alive "$_lt_stale"; then
+      mv -f "$_lt_stale" "$1" 2>/dev/null
+      rm -rf "$_lt_stale" 2>/dev/null
+      return 1
+    fi
+    rm -rf "$_lt_stale" 2>/dev/null
+  fi
+  if mkdir "$1" 2>/dev/null; then
+    if printf '%s\n' "$$" > "$1/pid" 2>/dev/null && [ "$(lock_pid "$1")" = "$$" ]; then
+      return 0
+    fi
+    [ -d "$1" ] && [ -z "$(lock_pid "$1")" ] && rm -rf "$1" 2>/dev/null
+    return 1
+  fi
   return 1
 }
 
@@ -794,8 +843,9 @@ lock_wait() {
   return 0
 }
 
-lock_drop() { rm -rf "$1" 2>/dev/null; return 0; }
 lock_drop_if_mine() { [ "$(lock_pid "$1")" = "$$" ] && rm -rf "$1" 2>/dev/null; return 0; }
+lock_drop() { lock_drop_if_mine "$1"; }
+lock_clear_stale() { lock_alive "$1" || rm -rf "$1" 2>/dev/null; return 0; }
 
 busy_reply() { reply false busy '⏳ Another task is still running. Please wait until it finishes.'; }
 
@@ -871,7 +921,7 @@ op_reconcile() {
   op_running || return 0
   lock_alive "$LOCKD" && return 0
   op_interrupt '⚠️ The last task was interrupted. Your hosts file is intact — run it again to finish.'
-  lock_drop "$LOCKD"
+  lock_clear_stale "$LOCKD"
   log WARN "A background task stopped unexpectedly; its state was reset"
 }
 
@@ -915,6 +965,7 @@ spawn() {
   else
     HK_SPAWN_MARK=$_sp_mark nohup sh "$SELF" "$@" < /dev/null > "$_sp_out" 2>&1 &
   fi
+  _sp_p=$!
   _sp_i=0
   while [ "$_sp_i" -lt 50 ]; do
     if [ -f "$_sp_mark" ]; then
@@ -924,6 +975,10 @@ spawn() {
     nap 0.1
     _sp_i=$((_sp_i + 1))
   done
+  kill_tree "$_sp_p"
+  wait "$_sp_p" 2>/dev/null
+  rm -f "$_sp_mark"
+  log ERROR "Background worker $* did not report readiness; terminated pid $_sp_p"
   return 1
 }
 
@@ -1205,9 +1260,56 @@ merge_sources() {
     _mg_a="$_mg_a $R_FILE"
   done
   awk -v addons="${_mg_a# }" -v outf="$_mg_d/extras.domains" -v statf="$_mg_d/merge.tmp" "$AWK_MERGE" "$_mg_b" 2>/dev/null || { rm -f "$_mg_d/extras.domains" "$_mg_d/merge.tmp"; return 1; }
+  [ -f "$_mg_d/extras.domains" ] || : > "$_mg_d/extras.domains" 2>/dev/null || return 1
   [ -f "$_mg_d/extras.domains" ] && [ -s "$_mg_d/merge.tmp" ] || return 1
   printf 'LIST=%s\nIDS=%s\n' "$C_LIST" "$C_ADDONS" >> "$_mg_d/merge.tmp" 2>/dev/null || return 1
   mv -f "$_mg_d/merge.tmp" "$_mg_d/merge.info"
+}
+
+stage_commit() {
+  _stc_prev="$CACHED.prev.$$"
+  _stc_ok=1
+  rm -rf "$_stc_prev"
+  mkdir -p "$_stc_prev" || return 1
+  if [ -d "$CACHED" ]; then
+    cp -r "$CACHED/." "$_stc_prev/" 2>/dev/null || { rm -rf "$_stc_prev"; return 1; }
+  fi
+  for _stc_f in "$STAGED"/*.domains; do
+    [ -f "$_stc_f" ] || continue
+    [ "$_stc_f" = "$STAGED/extras.domains" ] && continue
+    _stc_id=${_stc_f##*/}
+    _stc_id=${_stc_id%.domains}
+    mv -f "$_stc_f" "$LISTSD/$_stc_id.domains" || _stc_ok=0
+    if [ -f "$STAGED/$_stc_id.info" ]; then
+      mv -f "$STAGED/$_stc_id.info" "$LISTSD/$_stc_id.info" || _stc_ok=0
+    else
+      _stc_ok=0
+    fi
+  done
+  rm -f "$CACHED/extras.domains"
+  [ -f "$STAGED/extras.domains" ] && { mv -f "$STAGED/extras.domains" "$CACHED/extras.domains" || _stc_ok=0; }
+  if [ -f "$STAGED/merge.info" ]; then
+    mv -f "$STAGED/merge.info" "$CACHED/merge.info" || _stc_ok=0
+  else
+    _stc_ok=0
+  fi
+  if [ "$_stc_ok" != 1 ]; then
+    rm -rf "$CACHED"
+    if ! mv -f "$_stc_prev" "$CACHED" 2>/dev/null; then
+      log ERROR "Cache rollback failed; previous cache kept at $_stc_prev"
+      return 1
+    fi
+    return 1
+  fi
+  rm -rf "$_stc_prev"
+  for _stc_f in "$LISTSD"/*.domains; do
+    [ -f "$_stc_f" ] || continue
+    _stc_id=${_stc_f##*/}
+    _stc_id=${_stc_id%.domains}
+    word_in "$_stc_id" "$PL_BASE $PL_ADDONS" && continue
+    rm -f "$_stc_f" "$LISTSD/$_stc_id.info" 2>/dev/null
+  done
+  return 0
 }
 
 compile_into() {
@@ -1253,11 +1355,15 @@ stats_commit() {
 
 put_hosts() {
   if [ "${2:-}" = inplace ] && [ "$MODE" != install ] && [ -f "$HOSTS" ]; then
-    if cat "$1" > "$HOSTS" 2>/dev/null && [ "$(fsize "$1")" = "$(fsize "$HOSTS")" ]; then
+    _ph_tmp="$HOSTS.hkinplace.$$"
+    rm -f "$_ph_tmp"
+    if cp -f "$1" "$_ph_tmp" 2>/dev/null && cmp -s "$1" "$_ph_tmp" && set_hosts_perm "$_ph_tmp" && mv -f "$_ph_tmp" "$HOSTS"; then
       rm -f "$1"
       set_hosts_perm "$HOSTS"
       return 0
     fi
+    rm -f "$_ph_tmp"
+    return 1
   fi
   set_hosts_perm "$1"
   if mv -f "$1" "$HOSTS"; then
@@ -1318,10 +1424,12 @@ verify_hosts() {
   is_num "$_vh" && [ "$_vh" -eq $(($1 + 2)) ]
 }
 
-verify_hosts_deep() {
-  [ -s "$HOSTS" ] || return 1
-  awk -v want="$1" -v local4="$LOCAL_LINE" -v local6="$LOCAL6_LINE" "$AWK_VERIFY" "$HOSTS" 2>/dev/null
+verify_hosts_file() {
+  [ -s "$1" ] || return 1
+  awk -v want="$2" -v local4="$LOCAL_LINE" -v local6="$LOCAL6_LINE" "$AWK_VERIFY" "$1" 2>/dev/null
 }
+
+verify_hosts_deep() { verify_hosts_file "$HOSTS" "$1"; }
 
 install_hosts() {
   IH_CHANGED=1
@@ -1329,7 +1437,11 @@ install_hosts() {
   if [ -f "$HOSTS" ] && [ "$(fsize "$1")" = "$(fsize "$HOSTS")" ] && cmp -s "$1" "$HOSTS"; then
     rm -f "$1"
     IH_CHANGED=0
-    [ -f "$SUMF" ] || sum_record "$2"
+    if [ -f "$SUMF" ]; then
+      sum_check || sum_record "$2"
+    else
+      sum_record "$2"
+    fi
     return 0
   fi
   [ "${3:-}" = backup ] && backup_hosts
@@ -1369,12 +1481,12 @@ pending_flag() {
 repair_hosts() {
   if hosts_sane "$HOSTS"; then
     [ "${1:-}" = deep ] || return 0
+    cfg_load
     sum_check
-    case $? in
-      0) return 0 ;;
-      2) cfg_load; sum_record "$C_DOMAINS"; return 0 ;;
-    esac
-    log WARN "The hosts file didn’t match its checksum; rebuilding it"
+    if [ $? -eq 0 ] && verify_hosts_deep "$C_DOMAINS"; then
+      return 0
+    fi
+    log WARN "The hosts file is incomplete or doesn’t match its checksum; rebuilding it"
   fi
   mkdir -p "$HOSTSD"
   rm -f "$HOSTSD/.hosts.hknew"
@@ -1385,7 +1497,7 @@ repair_hosts() {
   elif [ "$C_SETUP" = ready ] && sources_ready; then
     compile_into "$HOSTSD/.hosts.hknew" 1 && _rh=1
   fi
-  if [ "$_rh" = 1 ] && hosts_sane "$HOSTSD/.hosts.hknew"; then
+  if [ "$_rh" = 1 ] && hosts_sane "$HOSTSD/.hosts.hknew" && verify_hosts_file "$HOSTSD/.hosts.hknew" "$CH_COUNT"; then
     if put_hosts "$HOSTSD/.hosts.hknew" inplace; then
       C_DOMAINS=$CH_COUNT
       cfg_save
@@ -1396,9 +1508,19 @@ repair_hosts() {
     fi
   fi
   rm -f "$HOSTSD/.hosts.hknew"
-  write_clean_hosts || return 1
-  log WARN "The hosts file was missing or damaged; wrote a clean localhost-only file"
-  return 0
+  if write_clean_hosts; then
+    C_DOMAINS=0
+    [ "$C_ENABLED" = 1 ] && C_SETUP=pending
+    cfg_save
+    log WARN "The hosts file was missing or damaged; wrote a clean localhost-only file"
+    return 0
+  fi
+  C_DOMAINS=0
+  [ "$C_ENABLED" = 1 ] && C_SETUP=pending
+  cfg_save
+  rm -f "$SUMF"
+  log ERROR "The hosts file was missing or damaged, and a clean fallback could not be written"
+  return 1
 }
 
 in_init_ns() {
@@ -1945,6 +2067,10 @@ fetch_source() {
   _fs_want=
   if [ -z "$_fs_enc" ] && [ -n "$_fs_cl" ]; then
     _fs_want=$_fs_cl
+  elif [ "$DL_TOOL" = curl ] && [ "$DL_GZ" = 1 ] && [ -n "$_fs_enc" ]; then
+    # curl --compressed writes the decoded body; Content-Length is the
+    # compressed wire size, so comparing them would always fail.
+    _fs_want=
   elif [ -n "$_fs_enc" ] && is_num "$_fs_total" && [ -n "$_fs_fet" ] && [ "$_fs_fet" = "$_fs_et" ]; then
     _fs_want=$_fs_total
   fi
@@ -1965,12 +2091,18 @@ fetch_source() {
   say "🧹 Cleaning and optimizing entries…"
   rm -f "$TMPD/norm.count"
   mkdir -p "$STAGED"
-  if ! awk -v cntf="$TMPD/norm.count" "$AWK_NORM" "$DLPART" > "$STAGED/$_fs_id.domains" 2>/dev/null; then
-    rm -f "$STAGED/$_fs_id.domains"
+  if ! awk -v cntf="$TMPD/norm.count" "$AWK_NORM" "$DLPART" > "$STAGED/$_fs_id.domains.tmp" 2>/dev/null; then
+    rm -f "$STAGED/$_fs_id.domains.tmp"
     pl_set process_failed "❌ $FS_NAME could not be processed. Nothing was changed."
     log ERROR "Processing $FS_NAME failed"
     return 1
   fi
+  mv -f "$STAGED/$_fs_id.domains.tmp" "$STAGED/$_fs_id.domains" 2>/dev/null || {
+    rm -f "$STAGED/$_fs_id.domains.tmp"
+    pl_set write_failed "❌ Couldn’t stage $FS_NAME. Nothing was changed."
+    log ERROR "Could not stage $FS_NAME"
+    return 1
+  }
   _fs_n=0
   [ -f "$TMPD/norm.count" ] && read -r _fs_n < "$TMPD/norm.count"
   is_num "$_fs_n" || _fs_n=0
@@ -1982,7 +2114,12 @@ fetch_source() {
     return 1
   fi
   say "✅ Verified $(fmt_num "$_fs_n") unique domains"
-  src_write "$STAGED/$_fs_id.info" "$_fs_et" "$_fs_sd" "$_fs_n" "$_fs_size"
+  if ! src_write "$STAGED/$_fs_id.info" "$_fs_et" "$_fs_sd" "$_fs_n" "$_fs_size"; then
+    rm -f "$STAGED/$_fs_id.domains" "$STAGED/$_fs_id.info"
+    pl_set write_failed "❌ Couldn’t save metadata for $FS_NAME. Nothing was changed."
+    log ERROR "Could not save source metadata for $FS_NAME"
+    return 1
+  fi
   meta_save "$_fs_id" "${_fs_hc:-$_fs_n}" "$(date_epoch "$_fs_sd")" "$_fs_sd" '' "$_fs_size"
   cancel_requested && return 3
   return 0
@@ -1997,6 +2134,8 @@ pipeline() {
   PL_NAME=$L_NAME
   addons_clean "$3"
   PL_ADDONS=$R_ADDONS
+  cfg_load
+  _pl_enabled=$C_ENABLED
   ensure_dirs
   pl_cleanup
   mkdir -p "$STAGED"
@@ -2060,7 +2199,7 @@ pipeline() {
   cfg_load
   case $PL_KIND in
     update | auto)
-      if [ "$_pl_new" = 0 ] && [ "$PL_WARN" = 0 ] && [ "$C_LIST" = "$PL_BASE" ] && [ "$C_ADDONS" = "$PL_ADDONS" ] && hosts_sane "$HOSTS"; then
+      if [ "$_pl_new" = 0 ] && [ "$PL_WARN" = 0 ] && [ "$C_LIST" = "$PL_BASE" ] && [ "$C_ADDONS" = "$PL_ADDONS" ] && [ "$C_SETUP" = ready ] && hosts_sane "$HOSTS" && verify_hosts_deep "$C_DOMAINS" && sum_check; then
         C_CHECKED=$(now)
         cfg_save
         PL_DOMAINS=$C_DOMAINS
@@ -2076,9 +2215,24 @@ pipeline() {
   rm -f "$RUND/cancel"
   C_LIST=$PL_BASE
   C_ADDONS=$PL_ADDONS
-  if ! merge_sources "$STAGED" || ! compile_into "$HOSTSD/.hosts.hknew" 1; then
+  if ! merge_sources "$STAGED" || ! compile_into "$HOSTSD/.hosts.hknew" "$C_ENABLED"; then
     pl_set write_failed "❌ Couldn’t build the new hosts file. Nothing was changed."
     log ERROR "Could not build the hosts file for $PL_NAME"
+    pl_cleanup
+    return 1
+  fi
+  _pl_stage_bad=0
+  for _pl_f in "$STAGED"/*.domains; do
+    [ -f "$_pl_f" ] || continue
+    [ "$_pl_f" = "$STAGED/extras.domains" ] && continue
+    _pl_id=${_pl_f##*/}
+    _pl_id=${_pl_id%.domains}
+    [ -f "$STAGED/$_pl_id.info" ] || _pl_stage_bad=1
+  done
+  if [ "$_pl_stage_bad" = 1 ] || ! stage_commit; then
+    rm -f "$HOSTSD/.hosts.hknew"
+    pl_set write_failed "❌ Couldn’t commit the downloaded cache. Nothing was changed."
+    log ERROR "Could not commit the downloaded cache for $PL_NAME"
     pl_cleanup
     return 1
   fi
@@ -2097,25 +2251,8 @@ pipeline() {
       ;;
   esac
 
-  for _pl_f in "$STAGED"/*.domains; do
-    [ -f "$_pl_f" ] || continue
-    _pl_id=${_pl_f##*/}
-    _pl_id=${_pl_id%.domains}
-    mv -f "$_pl_f" "$LISTSD/$_pl_id.domains"
-    mv -f "$STAGED/$_pl_id.info" "$LISTSD/$_pl_id.info" 2>/dev/null
-  done
-  for _pl_f in "$LISTSD"/*.domains; do
-    [ -f "$_pl_f" ] || continue
-    _pl_id=${_pl_f##*/}
-    _pl_id=${_pl_id%.domains}
-    word_in "$_pl_id" "$PL_BASE $PL_ADDONS" && continue
-    rm -f "$_pl_f" "$LISTSD/$_pl_id.info"
-  done
-  rm -f "$CACHED/extras.domains"
-  [ -f "$STAGED/extras.domains" ] && mv -f "$STAGED/extras.domains" "$CACHED/extras.domains"
-  mv -f "$STAGED/merge.info" "$CACHED/merge.info"
   src_load "$PL_BASE"
-  C_ENABLED=1
+  C_ENABLED=$_pl_enabled
   C_COUNT=$S_COUNT
   C_DOMAINS=$CH_COUNT
   C_SETUP=ready
@@ -2127,25 +2264,38 @@ pipeline() {
   op_phase finish
   PL_DOMAINS=$CH_COUNT
   _pl_n=$(fmt_num "$CH_COUNT")
-  case $PL_KIND in
-    update | auto) _pl_msg="✅ $PL_NAME updated — $_pl_n domains." ;;
-    enable) _pl_msg="🟢 Blocking is back on with $PL_NAME — $_pl_n domains." ;;
-    addons) _pl_msg="✅ Add-ons updated — $_pl_n domains." ;;
-    *) _pl_msg="✅ $PL_NAME is ready — $_pl_n domains." ;;
-  esac
-  if [ "$IH_CHANGED" = 1 ]; then
-    if settle_change; then
-      PL_LIVE=1
-      _pl_msg="$_pl_msg Active now — no reboot needed."
-    else
+  if [ "$_pl_enabled" != 1 ]; then
+    _pl_code=disabled
+    _pl_msg="✅ Blocklist sources are ready; blocking remains disabled."
+    if [ "$IH_CHANGED" = 1 ] && ! settle_change; then
       PL_REBOOT=1
-      _pl_msg="$_pl_msg Reboot to activate it."
     fi
-    _pl_code=applied
   else
-    apply_now
-    _pl_msg="✅ $PL_NAME is up to date — the hosts file didn’t change."
-    _pl_code=unchanged
+    case $PL_KIND in
+      update | auto) _pl_msg="✅ $PL_NAME updated — $_pl_n domains." ;;
+      enable) _pl_msg="🟢 Blocking is back on with $PL_NAME — $_pl_n domains." ;;
+      addons) _pl_msg="✅ Add-ons updated — $_pl_n domains." ;;
+      *) _pl_msg="✅ $PL_NAME is ready — $_pl_n domains." ;;
+    esac
+    if [ "$IH_CHANGED" = 1 ]; then
+      if settle_change; then
+        PL_LIVE=1
+        _pl_msg="$_pl_msg Active now — no reboot needed."
+      else
+        PL_REBOOT=1
+        _pl_msg="$_pl_msg Reboot to activate it."
+      fi
+      _pl_code=applied
+    else
+      if settle_change; then
+        PL_LIVE=1
+        _pl_msg="✅ $PL_NAME is up to date — the hosts file didn’t change."
+      else
+        PL_REBOOT=1
+        _pl_msg="✅ $PL_NAME is up to date — reboot to restore live blocking."
+      fi
+      _pl_code=unchanged
+    fi
   fi
   if [ "$PL_WARN" -gt 0 ]; then
     _pl_msg="$_pl_msg ⚠️ $PL_WARN $(plural "$PL_WARN" add-on add-ons) couldn’t be refreshed and kept the previous version."
@@ -2272,8 +2422,15 @@ EOF
 }
 
 rules_commit() {
-  cp -f "$ALLOWF" "$ALLOWF.undo" 2>/dev/null
-  cp -f "$BLOCKF" "$BLOCKF.undo" 2>/dev/null
+  rm -f "$ALLOWF.undo" "$BLOCKF.undo"
+  if ! cp -f "$ALLOWF" "$ALLOWF.undo" 2>/dev/null; then
+    rm -f "$ALLOWF.undo" "$BLOCKF.undo"
+    return 1
+  fi
+  if ! cp -f "$BLOCKF" "$BLOCKF.undo" 2>/dev/null; then
+    rm -f "$ALLOWF.undo" "$BLOCKF.undo"
+    return 1
+  fi
   if ! mv -f "$TMPD/rules.a.new" "$ALLOWF" || ! mv -f "$TMPD/rules.b.new" "$BLOCKF"; then
     rules_rollback
     return 1
@@ -2282,12 +2439,16 @@ rules_commit() {
 }
 
 rules_rollback() {
-  [ -f "$ALLOWF.undo" ] && mv -f "$ALLOWF.undo" "$ALLOWF"
-  [ -f "$BLOCKF.undo" ] && mv -f "$BLOCKF.undo" "$BLOCKF"
+  _rr_ok=1
+  if [ -f "$ALLOWF.undo" ]; then
+    mv -f "$ALLOWF.undo" "$ALLOWF" 2>/dev/null || _rr_ok=0
+  fi
+  if [ -f "$BLOCKF.undo" ]; then
+    mv -f "$BLOCKF.undo" "$BLOCKF" 2>/dev/null || _rr_ok=0
+  fi
   rm -f "$TMPD/rules.a.new" "$TMPD/rules.b.new"
-  return 0
+  return "$_rr_ok"
 }
-
 rules_done() { rm -f "$ALLOWF.undo" "$BLOCKF.undo" "$TMPD/rules.a.new" "$TMPD/rules.b.new" "$TMPD/rules.in"; return 0; }
 
 sched_alive() {
@@ -2357,9 +2518,16 @@ cmd_status() {
   js "$MGR_NAME"; _st_3=$JS
   js "$MGR_VER"; _st_4=$JS
   js "$S_SRCDATE"; _st_5=$JS
+  js "$HK_VER"; _st_v=$JS
+  js "$C_LIST"; _st_lid=$JS
+  js "$_st_level"; _st_lvl=$JS
+  js "$R_APPLIED"; _st_ap=$JS
+  js "$R_MOUNT"; _st_mt=$JS
+  js "$C_SETUP"; _st_su=$JS
+  js "$C_GUARD"; _st_gd=$JS
   _st_hs=0
   [ -f "$HOSTS" ] && _st_hs=$(fsize "$HOSTS")
-  reply true status '' "{\"version\":\"$HK_VER\",\"versionCode\":$HK_VCODE,\"manager\":$_st_3,\"managerVersion\":$_st_4,\"enabled\":$_st_en,\"list\":\"$C_LIST\",\"listName\":$_st_1,\"level\":\"$_st_level\",\"levelText\":$_st_2,\"domains\":$C_DOMAINS,\"listCount\":$C_COUNT,\"allow\":$_st_al,\"block\":$_st_bl,\"updated\":$C_UPDATED,\"checked\":$C_CHECKED,\"sourceDate\":$_st_5,\"reboot\":$_st_rb,\"applied\":\"$R_APPLIED\",\"mount\":\"$R_MOUNT\",\"setup\":\"$C_SETUP\",\"conflicts\":$_st_cfj,\"adaway\":$_st_aa,\"httpd\":$_st_hd,\"addons\":$_st_ad,\"live\":$_st_lv,\"autoupdate\":$C_AUTO,\"sched\":$_st_sc,\"guard\":\"$C_GUARD\",\"hostsSize\":$_st_hs,\"staleDays\":$STALE_DAYS,\"now\":$(now),\"stats\":{\"base\":${ST_BASE:-0},\"allowed\":${ST_ALLOWED:-0},\"blocked\":${ST_BLOCKED:-0},\"guarded\":${ST_GUARDED:-0}},\"op\":$R_OP}"
+  reply true status '' "{\"version\":$_st_v,\"versionCode\":$HK_VCODE,\"manager\":$_st_3,\"managerVersion\":$_st_4,\"enabled\":$_st_en,\"list\":$_st_lid,\"listName\":$_st_1,\"level\":$_st_lvl,\"levelText\":$_st_2,\"domains\":$C_DOMAINS,\"listCount\":$C_COUNT,\"allow\":$_st_al,\"block\":$_st_bl,\"updated\":$C_UPDATED,\"checked\":$C_CHECKED,\"sourceDate\":$_st_5,\"reboot\":$_st_rb,\"applied\":$_st_ap,\"mount\":$_st_mt,\"setup\":$_st_su,\"conflicts\":$_st_cfj,\"adaway\":$_st_aa,\"httpd\":$_st_hd,\"addons\":$_st_ad,\"live\":$_st_lv,\"autoupdate\":$C_AUTO,\"sched\":$_st_sc,\"guard\":$_st_gd,\"hostsSize\":$_st_hs,\"staleDays\":$STALE_DAYS,\"now\":$(now),\"stats\":{\"base\":${ST_BASE:-0},\"allowed\":${ST_ALLOWED:-0},\"blocked\":${ST_BLOCKED:-0},\"guarded\":${ST_GUARDED:-0}},\"op\":$R_OP}"
 }
 
 cmd_progress() { op_json; reply true progress '' "$R_OP"; }
@@ -2590,6 +2758,25 @@ cmd_source_add() {
   _sa_n=${_sa_n%"${_sa_n##*[! ]}"}
   [ -n "$_sa_n" ] || _sa_n=$_sa_h
   lock_take "$LOCKD" || { busy_reply; return 0; }
+  # Re-check under the lock: two concurrent additions must not both pass
+  # the pre-lock duplicate/capacity checks.
+  custom_ids
+  set -- $R_CUSTOM
+  if [ -f "$SRCF" ] && grep -qF "|$_sa_u|" "$SRCF" 2>/dev/null; then
+    lock_drop "$LOCKD"
+    reply false source_exists '⚠️ That list is already in your custom lists.'
+    return 0
+  fi
+  if [ "$#" -ge "$CUSTOM_MAX" ]; then
+    lock_drop "$LOCKD"
+    reply false source_limit "📦 You can add up to $CUSTOM_MAX custom lists. Remove one first."
+    return 0
+  fi
+  if ! custom_id_for "$_sa_u" || custom_info "$R_CID"; then
+    lock_drop "$LOCKD"
+    reply false source_invalid '❌ Couldn’t register that address. Please try a different one.'
+    return 0
+  fi
   if ! printf '%s|%s|%s\n' "$R_CID" "$_sa_u" "$_sa_n" >> "$SRCF"; then
     lock_drop "$LOCKD"
     reply false write_failed "❌ Couldn’t save the custom list. Please try again."
@@ -2620,26 +2807,62 @@ cmd_source_del() {
   lock_wait "$LOCKD" || { busy_reply; return 0; }
   cfg_load
   _sd_note=
-  if word_in "$1" "$C_ADDONS"; then
+  _sd_line=
+  _sd_active=0
+  word_in "$1" "$C_ADDONS" && _sd_active=1
+  _sd_line=$(grep -F "^$1|" "$SRCF" 2>/dev/null | head -n 1)
+  grep -v "^$1|" "$SRCF" > "$SRCF.tmp.$$" 2>/dev/null
+  _sd_grep=$?
+  # grep returns 1 when every line matched (the last custom source was the
+  # only row); that is success, not a write failure.
+  if [ "$_sd_grep" -gt 1 ]; then
+    rm -f "$SRCF.tmp.$$"
+    lock_drop "$LOCKD"
+    reply false write_failed "❌ Couldn’t update the custom list file. Nothing was changed."
+    log ERROR "Custom list removal failed while rewriting $SRCF"
+    return 0
+  fi
+  if ! mv -f "$SRCF.tmp.$$" "$SRCF" 2>/dev/null; then
+    rm -f "$SRCF.tmp.$$"
+    lock_drop "$LOCKD"
+    reply false write_failed "❌ Couldn’t update the custom list file. Nothing was changed."
+    log ERROR "Custom list removal could not replace $SRCF"
+    return 0
+  fi
+  if [ "$_sd_active" = 1 ]; then
     _sd_keep=
     for _sd_i in $C_ADDONS; do [ "$_sd_i" = "$1" ] || _sd_keep="$_sd_keep $_sd_i"; done
     _sd_old=$C_ADDONS
     C_ADDONS=${_sd_keep# }
-    cfg_save
+    if ! cfg_save; then
+      [ -n "$_sd_line" ] && printf '%s\n' "$_sd_line" >> "$SRCF" 2>/dev/null
+      C_ADDONS=$_sd_old
+      cfg_save
+      lock_drop "$LOCKD"
+      reply false write_failed "❌ Couldn’t save settings. Nothing was changed."
+      log ERROR "Custom list removal could not save settings"
+      return 0
+    fi
     if ! rebuild; then
       cfg_load
       C_ADDONS=$_sd_old
       cfg_save
+      [ -n "$_sd_line" ] && printf '%s\n' "$_sd_line" >> "$SRCF" 2>/dev/null
+      rebuild >/dev/null 2>&1
       lock_drop "$LOCKD"
       reply false "$RB_STATE" "❌ Couldn’t rebuild the hosts file, so the custom list was kept."
+      log ERROR "Custom list removal was rolled back after rebuild failure"
       return 0
     fi
     change_note
     _sd_note=$R_NOTE
   fi
-  grep -v "^$1|" "$SRCF" > "$SRCF.tmp.$$" 2>/dev/null
-  mv -f "$SRCF.tmp.$$" "$SRCF" 2>/dev/null
-  rm -f "$LISTSD/$1.domains" "$LISTSD/$1.info" "$METAD/$1" "$METAD/$1.busy"
+  if ! rm -f "$LISTSD/$1.domains" "$LISTSD/$1.info" "$METAD/$1" "$METAD/$1.busy" 2>/dev/null; then
+    lock_drop "$LOCKD"
+    reply false write_failed "❌ Couldn’t remove the custom list cache. Check the WebUI logs."
+    log ERROR "Custom list cache cleanup failed for $1"
+    return 0
+  fi
   lock_drop "$LOCKD"
   log INFO "Custom list removed: $_sd_n"
   reply true source_removed "🗑️ Removed $_sd_n.$_sd_note"
@@ -3104,8 +3327,9 @@ cmd_diag() {
     else
       sum_check
       case $? in
+        0) diag_add ok integrity '🧾 Hosts file' "Verified: $(fmt_num "$_dg_want") entries, $(fmt_mb "$(fsize "$HOSTS")"), checksum matches." ;;
         1) diag_add err integrity '🧾 Hosts file' 'The checksum doesn’t match. Tap Repair to rebuild it.' ;;
-        *) diag_add ok integrity '🧾 Hosts file' "Verified: $(fmt_num "$_dg_want") entries, $(fmt_mb "$(fsize "$HOSTS")"), checksum matches." ;;
+        *) diag_add warn integrity '🧾 Hosts file' 'The checksum cannot be verified with the available tools. Tap Repair to rebuild it.' ;;
       esac
     fi
   fi
@@ -3236,10 +3460,17 @@ cmd_repair() {
   rm -f "$SUMF"
   _rp_ok=1
   if [ "$C_ENABLED" != 1 ]; then
-    if compile_into "$HOSTSD/.hosts.hknew" 0 && install_hosts "$HOSTSD/.hosts.hknew" 0; then :; else _rp_ok=0; fi
+    if compile_into "$HOSTSD/.hosts.hknew" 0 && install_hosts "$HOSTSD/.hosts.hknew" 0; then
+      C_DOMAINS=0
+      if sources_ready; then C_SETUP=ready; else C_SETUP=pending; fi
+      cfg_save
+      stats_commit
+    else
+      _rp_ok=0
+    fi
     rm -f "$HOSTSD/.hosts.hknew"
   elif [ "$C_SETUP" = ready ] && sources_ready; then
-    if compile_into "$HOSTSD/.hosts.hknew" 1 && install_hosts "$HOSTSD/.hosts.hknew" "$CH_COUNT"; then
+    if compile_into "$HOSTSD/.hosts.hknew" "$C_ENABLED" && install_hosts "$HOSTSD/.hosts.hknew" "$CH_COUNT"; then
       C_DOMAINS=$CH_COUNT
       cfg_save
       stats_commit
@@ -3247,8 +3478,24 @@ cmd_repair() {
       _rp_ok=0
     fi
     rm -f "$HOSTSD/.hosts.hknew"
+  elif sources_ready; then
+    if compile_into "$HOSTSD/.hosts.hknew" "$C_ENABLED" && install_hosts "$HOSTSD/.hosts.hknew" "$CH_COUNT"; then
+      C_DOMAINS=$CH_COUNT
+      C_SETUP=ready
+      cfg_save
+      stats_commit
+    else
+      _rp_ok=0
+    fi
+    rm -f "$HOSTSD/.hosts.hknew"
   else
-    hosts_sane "$HOSTS" || write_clean_hosts || _rp_ok=0
+    if write_clean_hosts; then
+      C_DOMAINS=0
+      C_SETUP=pending
+      cfg_save
+    else
+      _rp_ok=0
+    fi
   fi
   if [ "$_rp_ok" = 0 ]; then
     lock_drop "$LOCKD"
@@ -3395,6 +3642,20 @@ port_listening() {
 
 pid_alive() { is_num "$1" && [ -d "/proc/$1" ]; }
 
+proc_cmdline() {
+  [ -r "/proc/$1/cmdline" ] && tr '\000' ' ' < "/proc/$1/cmdline" 2>/dev/null
+}
+
+pid_is_hostkeeper_serve() {
+  _phs_cmd=$(proc_cmdline "$1")
+  case $_phs_cmd in *hostkeeper.sh*_serve*) return 0 ;; *) return 1 ;; esac
+}
+
+pid_is_httpd_for_run() {
+  _phh_cmd=$(proc_cmdline "$1")
+  case $_phh_cmd in *httpd*"$RUND/www"*) return 0 ;; *) return 1 ;; esac
+}
+
 server_running() {
   _sr_w=; _sr_h=
   [ -f "$RUND/watchdog.pid" ] && read -r _sr_w < "$RUND/watchdog.pid"
@@ -3440,8 +3701,16 @@ server_stop() {
   _ss_w=; _ss_h=
   [ -f "$RUND/watchdog.pid" ] && read -r _ss_w < "$RUND/watchdog.pid"
   [ -f "$RUND/httpd.pid" ] && read -r _ss_h < "$RUND/httpd.pid"
-  pid_alive "$_ss_h" && kill "$_ss_h" 2>/dev/null
-  pid_alive "$_ss_w" && kill "$_ss_w" 2>/dev/null
+  if pid_alive "$_ss_h" && pid_is_httpd_for_run "$_ss_h"; then
+    kill "$_ss_h" 2>/dev/null
+  elif pid_alive "$_ss_h"; then
+    log WARN "Ignoring stale WebUI httpd pid $_ss_h: cmdline does not match this run directory"
+  fi
+  if pid_alive "$_ss_w" && pid_is_hostkeeper_serve "$_ss_w"; then
+    kill "$_ss_w" 2>/dev/null
+  elif pid_alive "$_ss_w"; then
+    log WARN "Ignoring stale WebUI watchdog pid $_ss_w: cmdline does not match hostkeeper _serve"
+  fi
   server_cleanup
 }
 
@@ -3499,10 +3768,6 @@ cgi_deny() {
 
 cgi_main() {
   case ${REQUEST_METHOD:-GET} in
-    GET)
-      _cg_q=${QUERY_STRING:-}
-      if [ "${#_cg_q}" -gt 4096 ]; then cgi_deny '🚫 Request rejected.'; return 0; fi
-      ;;
     POST)
       _cg_n=${CONTENT_LENGTH:-0}
       if ! is_num "$_cg_n" || [ "$_cg_n" -gt 262144 ]; then cgi_deny '🚫 Request rejected.'; return 0; fi
@@ -3510,6 +3775,8 @@ cgi_main() {
       [ "$_cg_n" -gt 0 ] && _cg_q=$(head -c "$_cg_n")
       ;;
     *)
+      # The WebUI always POSTs commands. Reject GET so the token can never
+      # land in httpd access logs or browser history.
       cgi_deny '🚫 Request rejected.'
       return 0
       ;;
@@ -3525,9 +3792,11 @@ EOF
     return 0
   fi
   case ${HTTP_HOST:-} in
-    '' | "127.0.0.1:$PORT" | "localhost:$PORT") ;;
+    "127.0.0.1:$PORT" | "localhost:$PORT") ;;
     *) cgi_deny '🚫 Request rejected.'; return 0 ;;
   esac
+  # Empty Referer is allowed on purpose: the frontend uses
+  # referrerPolicy=no-referrer and the token is still required in POST.
   case ${HTTP_REFERER:-} in
     '' | "http://127.0.0.1:$PORT/"* | "http://localhost:$PORT/"*) ;;
     *) cgi_deny '🚫 Request rejected.'; return 0 ;;
@@ -3700,6 +3969,18 @@ sched_due() {
   [ "$_sd_now" -ge "$_sd_r" ]
 }
 
+sched_exit() {
+  [ -n "${_sm_s:-}" ] && kill "$_sm_s" 2>/dev/null
+  if op_running; then
+    op_interrupt '⚠️ The auto-update task was interrupted. Your hosts file is intact — run it again if needed.'
+    pl_cleanup
+  fi
+  lock_drop_if_mine "$LOCKD"
+  [ "$(cat "$SCHEDPID" 2>/dev/null)" = "$$" ] && rm -f "$SCHEDPID"
+  log INFO "Auto-update scheduler stopped"
+  exit 0
+}
+
 sched_main() {
   MODE=worker
   _sm_tick=$1
@@ -3707,7 +3988,7 @@ sched_main() {
   echo "$$" > "$SCHEDPID"
   spawned
   _sm_s=
-  trap 'kill $_sm_s 2>/dev/null; lock_drop_if_mine "$LOCKD"; [ "$(cat "$SCHEDPID" 2>/dev/null)" = "$$" ] && rm -f "$SCHEDPID"; exit 0' TERM INT HUP
+  trap 'sched_exit' TERM INT HUP
   log INFO "Auto-update scheduler started"
   wait_boot
   while :; do
@@ -3781,9 +4062,24 @@ boot_main() {
 mount_main() {
   MODE=boot
   ensure_dirs
-  repair_hosts
+  repair_hosts deep
   ensure_mounted
   return 0
+}
+
+restore_original_for_uninstall() {
+  [ -f "$ORIGHOSTS" ] || return 1
+  umount "$HOSTS" 2>/dev/null || umount "$MOUNT_TARGET" 2>/dev/null || true
+  if cmp -s "$ORIGHOSTS" "$MOUNT_TARGET" 2>/dev/null; then
+    return 0
+  fi
+  _ru_tmp="$MOUNT_TARGET.hkun.$$"
+  rm -f "$_ru_tmp"
+  if cp -f "$ORIGHOSTS" "$_ru_tmp" 2>/dev/null && cmp -s "$ORIGHOSTS" "$_ru_tmp" && set_hosts_perm "$_ru_tmp" && mv -f "$_ru_tmp" "$MOUNT_TARGET"; then
+    return 0
+  fi
+  rm -f "$_ru_tmp" 2>/dev/null
+  return 1
 }
 
 uninstall_main() {
@@ -3793,11 +4089,17 @@ uninstall_main() {
     _un_p=$(lock_pid "$_un")
     pid_alive "$_un_p" && kill_tree "$_un_p"
   done
+  if ! restore_original_for_uninstall; then
+    log ERROR "Uninstall could not restore the original /system/etc/hosts; module data was kept for recovery"
+    return 1
+  fi
   rm -rf "$DATA"
+  return 0
 }
 
 install_main() {
   MODE=install
+  _in_fail=0
   ensure_dirs
   rm -rf "$LOCKD" "$METALOCK" "$STAGED" 2>/dev/null
   rm -f "$RUND"/spawn.* "$RUND/manager" "$METAD"/*.busy 2>/dev/null
@@ -3914,12 +4216,16 @@ install_main() {
   fi
   if [ "$_in_keep" = 0 ]; then
     cfg_load
-    C_ENABLED=1
+    _in_enabled=$C_ENABLED
     C_SETUP=pending
     cfg_save
     _in_name=$L_NAME
     if [ "${BOOTMODE:-true}" != false ] && pipeline setup "$C_LIST" "$C_ADDONS"; then
-      printf '✅ Hosts file ready: %s domains blocked after reboot\n' "$(fmt_num "$PL_DOMAINS")"
+      if [ "$_in_enabled" = 1 ]; then
+        printf '✅ Hosts file ready: %s domains blocked after reboot\n' "$(fmt_num "$PL_DOMAINS")"
+      else
+        printf '✅ Blocklist sources are ready; blocking stays disabled\n'
+      fi
     else
       if [ "${BOOTMODE:-true}" = false ]; then
         printf '⚠️ Installing from recovery: no network, so the list downloads after reboot\n'
@@ -3927,19 +4233,31 @@ install_main() {
       else
         printf '⚠️ %s\n' "${PL_MSG#* }"
       fi
-      write_clean_hosts
-      cfg_load
-      C_ENABLED=1
-      C_SETUP=pending
-      cfg_save
-      printf '🧩 Wrote a clean localhost-only hosts file for now\n'
-      printf '%s\n' "🔁 HostKeeper will retry automatically after reboot, once you’re online"
-      log WARN "The first download failed during install; it will be retried after reboot"
+      if write_clean_hosts; then
+        cfg_load
+        C_SETUP=pending
+        cfg_save
+        printf '🧩 Wrote a clean localhost-only hosts file for now\n'
+        printf '%s\n' "🔁 HostKeeper will retry automatically after reboot, once you’re online"
+        log WARN "The first download failed during install; it will be retried after reboot"
+      else
+        _in_fail=1
+        printf '❌ Could not write a clean hosts file.\n'
+        log ERROR "Install could not write a clean hosts file"
+      fi
     fi
   fi
   set_hosts_perm "$HOSTS"
-  rm -f "$SUMF"
   mark_pending
+  if [ "$_in_fail" = 0 ] && ! hosts_sane "$HOSTS"; then
+    _in_fail=1
+    log ERROR "Install finished without a sane hosts file"
+  fi
+  if [ "$_in_fail" != 0 ]; then
+    printf '\n❌ HostKeeper installation failed. The previous hosts file was left intact when possible.\n'
+    log ERROR "HostKeeper installation failed; setup is incomplete"
+    return 1
+  fi
   set_description
 
   printf '\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'
@@ -3959,13 +4277,13 @@ install_main() {
       ;;
   esac
   printf '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'
+  return 0
 }
 
 [ -d "$TMPD" ] && [ -d "$LISTSD" ] || ensure_dirs
-HK_RC=0
 
 case ${1:-} in
-  cgi) cgi_main; HK_RC=0 ;;
+  cgi) cgi_main ;;
   _worker) worker_main "${2:-}" "${3:-}" "${4:-}" ;;
   _meta) shift; meta_worker_main "$@" ;;
   _setup) setup_main ;;
@@ -3978,4 +4296,5 @@ case ${1:-} in
   _uninstall) uninstall_main ;;
   *) dispatch "$@" ;;
 esac
+HK_RC=$?
 exit "$HK_RC"

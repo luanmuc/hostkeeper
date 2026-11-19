@@ -2,8 +2,8 @@
   'use strict';
 
   const MOD = '/data/adb/modules/hostkeeper';
-  const VERSION = 'v1.0.2';
-  const VERSION_CODE = 3;
+  const VERSION = 'v1.0.3';
+  const VERSION_CODE = 4;
   const RULE_MAX = 1000;
   const LEVEL = { green: '🟢', blue: '🔵', yellow: '🟡', orange: '🟠', red: '🔴' };
   const STEPS = [
@@ -1431,6 +1431,8 @@
     if (!/^https:\/\//i.test(s)) return { err: '🚫 Enter a full HTTPS address, like https://example.com/hosts.txt' };
     if (s.length > 300) return { err: '🚫 That address is too long.' };
     if (/[^A-Za-z0-9._~:/?&=%+,@-]/.test(s)) return { err: '🚫 That address contains characters that aren’t allowed.' };
+    // Match the backend rule: userinfo in the authority is never accepted.
+    if (/^https:\/\/[^/?#]*@/i.test(s)) return { err: '🚫 Addresses with a user name aren’t allowed.' };
     return { url: 'https://' + s.slice(8) };
   }
 
