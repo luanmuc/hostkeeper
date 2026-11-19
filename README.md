@@ -13,7 +13,7 @@
 
 ## 安装
 
-仓库根目录本身就是模块包（`module.prop` 位于根），打包成 zip 后刷入 KernelSU / Magisk / APatch，重启即可。
+仓库根目录本身就是模块包（`module.prop` 位于根），打包成 zip 后刷入 KernelSU / Magisk / APatch，重启即可。维护、检查与打包见 `MAINTAINING.md`。
 
 ## 使用
 

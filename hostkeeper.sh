@@ -19,8 +19,8 @@ umask 022
 PATH=/system/bin:/system/xbin:/vendor/bin:${PATH:-/bin}
 export PATH
 
-HK_VER=v1.0.1
-HK_VCODE=2
+HK_VER=v1.0.2
+HK_VCODE=3
 SELF=$0
 case $SELF in /*) ;; *) SELF=$(pwd)/$SELF ;; esac
 MODDIR=${HK_MODDIR:-${SELF%/*}}
@@ -1006,6 +1006,10 @@ dl_get() {
   wait "$_dg_p"
   _dg_rc=$?
   [ -n "$DL_PIDF" ] && rm -f "$DL_PIDF"
+  if [ -z "$DL_FAIL" ] && [ "$DL_TOOL" = wget ] &&
+     grep -qiE '^[[:space:]]*location:[[:space:]]*(http|ftp)://' "$_dg_h" 2>/dev/null; then
+    DL_FAIL=insecure
+  fi
   if [ -z "$DL_FAIL" ] && [ "$(fsize "$_dg_o")" -gt "$MAX_BYTES" ]; then
     DL_FAIL=toolarge
   fi
@@ -1034,6 +1038,7 @@ dl_get() {
 dl_reason() {
   case $DL_FAIL in
     http) printf 'HTTP %s' "$DL_CODE" ;;
+    insecure) printf 'an insecure redirect was refused' ;;
     toolarge) printf 'the file is larger than %s MB' "$((MAX_BYTES / 1048576))" ;;
     incomplete) printf 'transfer interrupted%s' "${DL_ERR:+ ($DL_ERR)}" ;;
     *) printf 'no connection%s' "${DL_ERR:+ ($DL_ERR)}" ;;
@@ -1046,6 +1051,7 @@ dl_fetch() {
     dl_get "$1" "$2" "$3" "$4" && return 0
     case $DL_FAIL in
       toolarge) return 1 ;;
+      insecure) return 1 ;;
       http) case $DL_CODE in 408 | 425 | 429 | 5??) ;; *) return 1 ;; esac ;;
     esac
     [ "$_df_t" -ge 3 ] && return 1
@@ -3406,6 +3412,7 @@ server_prepare() {
   rm -rf "$RUND/www"
   mkdir -p "$RUND/www/cgi-bin" || return 1
   cp -r "$MODDIR/webroot/." "$RUND/www/" || return 1
+  chmod 0700 "$RUND" "$RUND/www" "$RUND/www/cgi-bin" 2>/dev/null
   printf '#!/system/bin/sh\nexec /system/bin/sh "%s" cgi\n' "$MODDIR/hostkeeper.sh" > "$RUND/www/cgi-bin/api" || return 1
   chmod 0755 "$RUND/www/cgi-bin/api"
   {
@@ -3472,7 +3479,16 @@ serve_main() {
 }
 
 cgi_headers() {
-  printf 'Content-Type: application/json; charset=utf-8\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\nX-Frame-Options: DENY\r\nReferrer-Policy: no-referrer\r\n\r\n'
+  printf '%s\r\n' \
+    'Content-Type: application/json; charset=utf-8' \
+    'Cache-Control: no-store' \
+    'X-Content-Type-Options: nosniff' \
+    'X-Frame-Options: DENY' \
+    'Referrer-Policy: no-referrer' \
+    "Content-Security-Policy: default-src 'none'; frame-ancestors 'none'" \
+    'Cross-Origin-Resource-Policy: same-origin' \
+    'Permissions-Policy: camera=(), microphone=(), geolocation=()' \
+    ''
 }
 
 cgi_deny() {

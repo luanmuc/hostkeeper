@@ -9,8 +9,8 @@
 | `module.prop` | `version=` / `versionCode=` | **唯一来源**，设备端以此为准 |
 | `hostkeeper.sh` | `HK_VER=` / `HK_VCODE=`（第 22-23 行） | 仅当 module.prop 缺失时生效，运行时会被文件值覆盖 |
 | `webroot/app.js` | `VERSION` / `VERSION_CODE`（第 5-6 行） | 状态接口失败时的兜底值 |
-| `webroot/index.html` | `#ver` 品牌兜底、`#credits-ver` 页脚、3 处 `?v=` 缓存参数（第 13-14、203 行） | 页面加载后会被接口值覆盖 |
-| `customize.sh` | 安装横幅 | 自动从 module.prop 读取，不需要手改 |
+| `webroot/index.html` | `#ver` 品牌兜底、`#credits-ver` 页脚、3 处 `?v=` 缓存参数（第 14-15、25、173、204 行） | 页面加载后会被接口值覆盖 |
+| `customize.sh` | `HK_VER` 兜底（第 4 行） | module.prop 读不到时的安装横幅兜底 |
 
 发布时上表所有值必须一致；`version=`、`HK_VER`、`VERSION` 与页面显示文本都保留 `v` 前缀。
 
@@ -45,8 +45,13 @@
 ## 5. 打包
 
 ```bash
-VERSION=$(sed -n 's/^version=//p' module.prop)
-zip -r "HostKeeper-$VERSION.zip" . -x ".git/*"
+sh scripts/package.sh
+```
+
+脚本只复制模块运行所需的文件到 `../out/HostKeeper-<version>.zip`，自动排除 `.git`、`scripts/`、README 与维护文档，并把入口脚本设为 0755。自定义输出目录：
+
+```bash
+OUT_DIR=/path/to/out sh scripts/package.sh
 ```
 
 ## 6. 已知外部依赖（不是我们维护的）
@@ -59,12 +64,25 @@ zip -r "HostKeeper-$VERSION.zip" . -x ".git/*"
 ## 7. 改动后的最小验证
 
 ```bash
-sh -n hostkeeper.sh && sh -n customize.sh && sh -n service.sh && sh -n post-mount.sh && sh -n uninstall.sh && sh -n action.sh
-node --check webroot/app.js
-
-# 版本一致性（四处必须相同）
-sed -n 's/^version=//p' module.prop
-grep -n 'HK_VER=' hostkeeper.sh
-grep -n "VERSION = " webroot/app.js
-grep -n 'id="ver"' webroot/index.html
+sh scripts/check.sh
 ```
+
+`check.sh` 覆盖：全部 shell 语法、`app.js` / `theme.js` 语法、`module.prop` 字段、各处版本兜底值、模块必需文件、入口脚本执行位、旧内部命名与凭证扫描。需要单独看某一项时：
+
+```bash
+sh -n hostkeeper.sh
+node --check webroot/app.js
+sed -n 's/^version=//p' module.prop
+grep -n 'HK_VER=' hostkeeper.sh customize.sh
+grep -n "VERSION = " webroot/app.js
+grep -nE '?v=|id="ver"' webroot/index.html
+```
+
+## 8. 安全边界
+
+- WebUI httpd 只监听 `127.0.0.1:9090`，`httpd.conf` 用 `A:127.0.0.1` + `D:*` 拒绝非本机来源
+- 会话 token 为 32 位十六进制，`/data/adb/hostkeeper/token` 权限 0600；页面用 POST body 传递，不走 URL query
+- CGI 校验 token、`HTTP_HOST` 与 `HTTP_REFERER`；响应带 `no-store`、`nosniff`、`DENY`、CSP 等头
+- 静态页 CSP 禁止外部脚本、对象与表单提交；样式允许 `unsafe-inline`，因为进度条用 JS 写 `style.transform`
+- 自定义列表只允许 HTTPS，下载限速/限大小；`curl` 路径强制 HTTPS 重定向，`wget` 回退拒绝 HTTP/FTP 重定向
+- 数据目录 0700；WebUI 运行目录与 `cgi-bin` 也设为 0700

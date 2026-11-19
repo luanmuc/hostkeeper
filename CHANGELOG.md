@@ -1,3 +1,13 @@
+# HostKeeper v1.0.2
+
+- 安全加固：WebUI 页面增加 CSP；CGI 响应增加 CSP、CORP、Permissions-Policy；WebUI 运行目录与 `cgi-bin` 设为 0700
+- 下载加固：`wget` 回退路径拒绝 HTTP/FTP 重定向，避免 HTTPS 列表被降级到明文
+- 新增 `scripts/check.sh`：检查 shell / JS 语法、module.prop 字段、各处版本兜底值、模块必需文件、执行位、旧命名与凭证
+- 新增 `scripts/package.sh`：只打包模块运行文件，自动排除开发文件并修正脚本执行位
+- 新增 `.gitignore`
+- 修正 `customize.sh` 安装横幅兜底版本未跟随 `module.prop` 的问题
+- versionCode 2 → 3
+
 # HostKeeper v1.0.1
 
 - 版本号统一：`module.prop` 成为唯一版本源，`hostkeeper.sh` 启动时读取，安装横幅同步读取
