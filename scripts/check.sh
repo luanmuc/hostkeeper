@@ -81,6 +81,20 @@ grep -qF 'aria-label="开启拦截"' webroot/index.html && ok 'hero switch has C
 grep -qF '>关闭</span>' webroot/index.html && ok 'initial toggle state is 关闭' || bad 'initial toggle state is not 关闭'
 grep -qF '健康检查' webroot/index.html && ok 'health check tile is Chinese' || bad 'health check tile is not Chinese'
 grep -qF '请先开启拦截' hostkeeper.sh && ok 'backend blocker message is Chinese' || bad 'backend blocker message is not Chinese'
+grep -qF 'L_URL_ALT=' hostkeeper.sh && ok 'GitHub list fallback URL field present' || bad 'GitHub list fallback URL field missing'
+grep -qF 'cdn.jsdelivr.net' hostkeeper.sh && ok 'jsDelivr fallback present' || bad 'jsDelivr fallback missing'
+grep -qF 'dl_fetch_any' hostkeeper.sh && ok 'download fallback helper present' || bad 'download fallback helper missing'
+if grep -qF '_mf_urls=$DL_USED_URL' hostkeeper.sh; then
+  bad 'meta full download drops mirror fallback after peek'
+else
+  ok 'meta full download keeps mirror fallback'
+fi
+grep -qF 'function apiTimeout' webroot/app.js && ok 'UI request timeout helper present' || bad 'UI request timeout helper missing'
+grep -qF "apiTimeout('diag', [], 25000)" webroot/app.js && ok 'health check uses 25s timeout' || bad 'health check does not use 25s timeout'
+grep -qF 'DL_MAX_TIME=20' hostkeeper.sh && ok 'diag network peek is time-bounded' || bad 'diag network peek is unbounded'
+grep -qF 'showDiag.seq' webroot/app.js && ok 'health check has stale-response guard' || bad 'health check has no stale-response guard'
+grep -qF 'add.disabled = busy || reached;' webroot/app.js && ok 'custom add re-enables after busy' || bad 'custom add can stay disabled after busy'
+grep -qF 'r = await sendImport(p.allow, p.block, mode);' webroot/app.js && ok 'rule import has guarded busy release' || bad 'rule import busy release not guarded'
 grep -qF "L_LEVELTXT='均衡'" hostkeeper.sh && ok 'list level text is Chinese' || bad 'list level text is not Chinese'
 if grep -RInE 'Disable HostKeeper\?|Enable blocking|Disable blocking|Loading…|Pick a blocklist' webroot >/dev/null 2>&1; then
   bad 'legacy English UI copy is still present'

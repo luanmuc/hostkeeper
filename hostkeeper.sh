@@ -19,8 +19,8 @@ umask 022
 PATH=/system/bin:/system/xbin:/vendor/bin:${PATH:-/bin}
 export PATH
 
-HK_VER=v1.0.6
-HK_VCODE=7
+HK_VER=v1.0.7
+HK_VCODE=8
 SELF=$0
 case $SELF in /*) ;; *) SELF=$(pwd)/$SELF ;; esac
 MODDIR=${HK_MODDIR:-${SELF%/*}}
@@ -93,7 +93,7 @@ STEVENBLACK_RAW=https://raw.githubusercontent.com/StevenBlack/hosts/refs/heads/m
 HAGEZI_RAW=https://raw.githubusercontent.com/hagezi/dns-blocklists-legacy/refs/heads/main/hosts
 
 list_info() {
-  L_KIND=base; L_GROUP=; L_LEVEL=; L_LEVELTXT=; L_ICON=; L_WARN=; L_MIN=1000; L_CUSTOM=0
+  L_KIND=base; L_GROUP=; L_LEVEL=; L_LEVELTXT=; L_ICON=; L_WARN=; L_MIN=1000; L_CUSTOM=0; L_URL_ALT=
   case $1 in
     stevenblack)
       L_NAME='StevenBlack Main'; L_GROUP=unified; L_LEVEL=green; L_LEVELTXT='均衡'
@@ -183,6 +183,18 @@ list_info() {
       custom_info "$1" || return 1 ;;
     *) return 1 ;;
   esac
+  L_URL_ALT=
+  case $L_URL in
+    https://raw.githubusercontent.com/*)
+      _lu_rest=${L_URL#https://raw.githubusercontent.com/}
+      _lu_repo=${_lu_rest%%/refs/heads/*}
+      _lu_rest=${_lu_rest#*/refs/heads/}
+      _lu_branch=${_lu_rest%%/*}
+      _lu_path=${_lu_rest#*/}
+      [ -n "$_lu_repo" ] && [ -n "$_lu_branch" ] && [ -n "$_lu_path" ] && \
+        L_URL_ALT="https://cdn.jsdelivr.net/gh/$_lu_repo@$_lu_branch/$_lu_path"
+      ;;
+  esac
   return 0
 }
 
@@ -190,7 +202,7 @@ custom_info() {
   [ -f "$SRCF" ] || return 1
   while IFS='|' read -r _cu_i _cu_u _cu_n; do
     [ "$_cu_i" = "$1" ] || continue
-    L_KIND=addon; L_GROUP=custom; L_ICON='🔗'; L_MIN=1; L_CUSTOM=1
+    L_KIND=addon; L_GROUP=custom; L_ICON='🔗'; L_MIN=1; L_CUSTOM=1; L_URL_ALT=
     L_URL=$_cu_u
     L_NAME=$_cu_n
     L_DESC=${_cu_u#https://}
@@ -1022,6 +1034,7 @@ dl_get() {
       set -- -sS -L -g --proto '=https' --proto-redir '=https' --connect-timeout 15 --speed-limit 1024 --speed-time 30 --max-filesize "$MAX_BYTES" -A "$UA" -D "$_dg_h" -o "$_dg_o"
       if [ "$_dg_m" = peek ]; then
         set -- "$@" -r 0-8191
+        [ -n "${DL_MAX_TIME:-}" ] && set -- "$@" --max-time "$DL_MAX_TIME"
       elif [ "$DL_GZ" = 1 ]; then
         set -- "$@" --compressed
       fi
@@ -1100,8 +1113,30 @@ dl_reason() {
   esac
 }
 
+dl_fetch_any() {
+  _dfa_o=$1; _dfa_h=$2; _dfa_m=$3
+  shift 3
+  _dfa_n=0
+  for _dfa_u in "$@"; do
+    [ -n "$_dfa_u" ] || continue
+    _dfa_n=$((_dfa_n + 1))
+    if [ "$_dfa_n" -eq 1 ]; then
+      _dfa_retry=2
+    else
+      _dfa_retry=1
+      log WARN "主源失败，尝试备用源：$_dfa_u"
+    fi
+    if dl_fetch "$_dfa_u" "$_dfa_o" "$_dfa_h" "$_dfa_m" "$_dfa_retry"; then
+      DL_USED_URL=$_dfa_u
+      return 0
+    fi
+  done
+  return 1
+}
+
 dl_fetch() {
   _df_t=1
+  _df_max=${5:-3}
   while :; do
     dl_get "$1" "$2" "$3" "$4" && return 0
     case $DL_FAIL in
@@ -1109,7 +1144,7 @@ dl_fetch() {
       insecure) return 1 ;;
       http) case $DL_CODE in 408 | 425 | 429 | 5??) ;; *) return 1 ;; esac ;;
     esac
-    [ "$_df_t" -ge 3 ] && return 1
+    [ "$_df_t" -ge "$_df_max" ] && return 1
     cancel_requested && return 1
     [ "$MODE" = install ] || log WARN "第 $_df_t 次下载尝试失败：$(dl_reason)，正在重试"
     nap $((_df_t * 2))
@@ -1797,12 +1832,15 @@ meta_fetch_one() {
   list_info "$1" || return 0
   _mf_b=$TMPD/meta.$1.body
   _mf_h=$TMPD/meta.$1.hdr
+  _mf_urls=$L_URL
+  [ -n "$L_URL_ALT" ] && _mf_urls="$_mf_urls $L_URL_ALT"
   if [ "$DL_TOOL" = none ] || [ -z "$DL_TOOL" ]; then
     meta_save "$1" '' '' '' no_downloader ''
-  elif ! dl_fetch "$L_URL" "$_mf_b" "$_mf_h" peek; then
+  elif ! dl_fetch_any "$_mf_b" "$_mf_h" peek $_mf_urls; then
     meta_save "$1" '' '' '' "${DL_FAIL:-network}" ''
     log WARN "无法获取 $L_NAME 的详情：$(dl_reason)"
   else
+    # peek 成功只代表这一次请求；full 仍保留主源+镜像，避免二次请求被同一网络重置。
     head_info "$_mf_b"
     _mf_c=$HI_COUNT
     _mf_d=$HI_DATE
@@ -1812,7 +1850,7 @@ meta_fetch_one() {
       _mf_full=0
       [ -n "$DL_TOTAL" ] && [ "$(fsize "$_mf_b")" = "$DL_TOTAL" ] && _mf_full=1
       if [ "$_mf_full" = 0 ] && [ "$L_KIND" = base ]; then
-        dl_fetch "$L_URL" "$_mf_b" "$_mf_h" full && _mf_full=1
+        dl_fetch_any "$_mf_b" "$_mf_h" full $_mf_urls && _mf_full=1
         [ -n "$DL_TOTAL" ] && _mf_s=$DL_TOTAL
       fi
       if [ "$_mf_full" = 1 ] && ! looks_html "$_mf_b"; then
@@ -1977,7 +2015,9 @@ fetch_source() {
     log INFO "正在检查 $FS_NAME 的更新"
   fi
   _fs_et=; _fs_sd=; _fs_hc=; _fs_total=; _fs_have=0
-  if dl_fetch "$_fs_url" "$TMPD/peek.body" "$TMPD/peek.hdr" peek; then
+  _fs_urls=$_fs_url
+  [ -n "$L_URL_ALT" ] && _fs_urls="$_fs_urls $L_URL_ALT"
+  if dl_fetch_any "$TMPD/peek.body" "$TMPD/peek.hdr" peek $_fs_urls; then
     head_info "$TMPD/peek.body"
     _fs_et=$DL_ETAG
     _fs_sd=$HI_DATE
@@ -2031,7 +2071,9 @@ fetch_source() {
   else
     rm -f "$TMPD/peek.body" "$TMPD/peek.hdr"
     DL_PIDF=$RUND/dl.pid
-    if ! dl_fetch "$_fs_url" "$DLPART" "$DLHDR" full; then
+    _fs_urls=$_fs_url
+    [ -n "$L_URL_ALT" ] && case $_fs_urls in *"$L_URL_ALT"*) ;; *) _fs_urls="$_fs_urls $L_URL_ALT" ;; esac
+    if ! dl_fetch_any "$DLPART" "$DLHDR" full $_fs_urls; then
       DL_PIDF=
       cancel_requested && return 3
       pl_download_error
@@ -3406,11 +3448,13 @@ cmd_diag() {
     else
       diag_add ok downloader '⬇️ 下载工具' 'BusyBox wget。'
     fi
+    DL_MAX_TIME=20
     if dl_get "$_dg_url" "$TMPD/diag.body" "$TMPD/diag.hdr" peek; then
       diag_add ok network '🌐 列表服务器' "可访问（HTTP $DL_CODE）。"
     else
       diag_add warn network '🌐 列表服务器' "无法连接 $_dg_name 的服务器：$(dl_reason)。"
     fi
+    DL_MAX_TIME=
     rm -f "$TMPD/diag.body" "$TMPD/diag.hdr" "$TMPD/diag.hdr.err"
   else
     diag_add err downloader '⬇️ 下载工具' 'curl 和 BusyBox wget 都不可用，无法下载列表。'

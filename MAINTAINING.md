@@ -24,6 +24,9 @@
 
 ## 2. 列表与规则从哪里来
 
+- 内置 GitHub 列表保留原始 `raw.githubusercontent.com` 地址；`list_info()` 会为这类地址派生 `L_URL_ALT`（jsDelivr 镜像），下载时由 `dl_fetch_any()` 先试主源、失败再试镜像。
+- 不要删除或替换第三方列表的原始地址与名称；镜像只是回退路径。
+
 - 两个源前缀在 `hostkeeper.sh` 第 92-93 行：
   - `STEVENBLACK_RAW` → StevenBlack/hosts
   - `HAGEZI_RAW` → HaGeZi dns-blocklists-legacy
@@ -111,6 +114,16 @@ grep -nE '?v=|id="ver"' webroot/index.html
 - inplace 写入 hosts 时使用同目录临时文件 + `cmp` + `mv -f`，失败保留旧文件
 - 源元数据 `src_write` 使用 `.tmp` + `mv` 原子写；`stage_commit` 提交失败整体回滚
 - 卸载只有在原始 hosts 恢复成功后才删除 `/data/adb/hostkeeper`
+
+## 8.1 WebUI 交互收口
+
+- 所有会 await 后端的按钮必须用 `apiTimeout()` 或 `try/finally`，失败/超时后恢复按钮、`S.syncBusy`、进度条。
+- 健康检查 `showDiag()` 不再设置 `disabled`；用 `showDiag.seq` 丢弃过期响应，关闭弹窗后可以重新发起。
+- 后端卡住时前端只负责恢复可点，不取消后端进程；重试可能产生并发请求，服务端仍需保证幂等/锁。
+- 自定义列表「添加列表」按钮的 disabled 必须同时考虑 busy 和数量上限，busy 结束后由 `applyBusy()` 重新计算，不能只置 true。
+- 规则导入等多批次操作必须 `try/finally` 释放 `S.syncBusy`，单批失败要 break 并显示错误。
+- `scripts/check.sh` 校验 `apiTimeout`、健康检查超时、过期响应保护、自定义列表恢复和规则导入 busy 收口。
+- 健康检查的后端网络探测 `cmd_diag()` 使用 `DL_MAX_TIME=20` 限制单次 peek；前端 `showDiag()` 超时为 25 秒，后端应先返回失败原因而不是让前端只看到泛化超时。
 
 ## 9. 管理器适配与检测边界
 

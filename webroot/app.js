@@ -2,8 +2,8 @@
   'use strict';
 
   const MOD = '/data/adb/modules/hostkeeper';
-  const VERSION = 'v1.0.6';
-  const VERSION_CODE = 7;
+  const VERSION = 'v1.0.7';
+  const VERSION_CODE = 8;
   const RULE_MAX = 1000;
   const LEVEL = { green: '🟢', blue: '🔵', yellow: '🟡', orange: '🟠', red: '🔴' };
   const STEPS = [
@@ -40,7 +40,8 @@
     offline: '🔌 本地 WebUI 服务已停止运行。',
     unauthorized: '🔑 当前会话已过期。',
     no_token: '🔑 未找到安全会话。',
-    framed: '🚫 HostKeeper 不能在另一个页面中运行。'
+    framed: '🚫 HostKeeper 不能在另一个页面中运行。',
+    timeout: '⏱️ 请求超时，请重试。'
   };
   const ERR = {
     empty: '✏️ 请先输入域名。',
@@ -333,6 +334,29 @@
     return r;
   }
 
+  // 给交互按钮用的超时包装：后端卡住时也要让页面恢复可点。
+  function apiTimeout(cmd, args, ms) {
+    return new Promise((resolve) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        resolve({ ok: false, code: 'timeout', message: FAIL.timeout, data: {} });
+      }, ms || 15000);
+      api(cmd, args).then((r) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(r);
+      }, (e) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve({ ok: false, code: 'bridge', message: (e && e.message) ? ('❌ ' + e.message) : FAIL.bridge, data: {} });
+      });
+    });
+  }
+
   function toast(msg, kind) {
     if (!msg) return;
     const box = $('toasts');
@@ -509,18 +533,21 @@
     btn.disabled = true;
     const code = S.gate;
     S.gate = '';
-    const r = await Bridge.call('ping');
-    btn.disabled = false;
-    if (r.ok) {
-      $('gate').hidden = true;
-      if (!S.ready) {
-        start();
+    try {
+      const r = await apiTimeout('ping', [], 10000);
+      if (r.ok) {
+        $('gate').hidden = true;
+        if (!S.ready) {
+          start();
+        } else {
+          refreshAll();
+        }
       } else {
-        refreshAll();
+        showGate(r.code === 'bridge' ? (code || 'bridge') : r.code);
+        toast(r.message, 'err');
       }
-    } else {
-      showGate(r.code === 'bridge' ? (code || 'bridge') : r.code);
-      toast(r.message, 'err');
+    } finally {
+      btn.disabled = false;
     }
   }
 
@@ -1059,7 +1086,11 @@
       rows[id].del.disabled = busy;
     });
     const add = $('custom-add');
-    if (add && busy) add.disabled = true;
+    if (add) {
+      const list = S.lists;
+      const reached = !!(list && list.addons && list.addons.filter((a) => a.custom).length >= (list.customMax || 8));
+      add.disabled = busy || reached;
+    }
     renderAddonBar();
     const xs = document.querySelectorAll('#rule-list .rule-x');
     for (let i = 0; i < xs.length; i++) xs[i].disabled = busy;
@@ -1246,7 +1277,7 @@
   async function pollOp() {
     if (polling) return;
     polling = true;
-    const r = await api('progress');
+    const r = await apiTimeout('progress', [], 15000);
     polling = false;
     if (r.ok) handleOp(r.data);
     if (S.op && S.op.running) schedulePoll(document.hidden ? 2000 : 400);
@@ -1391,7 +1422,7 @@
     S.opView = true;
     resetSpeed();
     showProgress(Object.assign({ running: true, kind: kind, phase: 'prepare', bytes: 0, total: 0, cancellable: false }, first || {}));
-    const r = await api(cmd, args);
+    const r = await apiTimeout(cmd, args, 20000);
     if (!r.ok || r.code !== 'started') {
       if (r.ok) {
         S.opView = false;
@@ -1510,24 +1541,30 @@
     if (!ok) return;
     Modal.close();
     setSyncBusy(true);
-    const r = await api('source-del', [id]);
-    setSyncBusy(false);
-    toast(r.message, r.ok ? 'ok' : 'err');
-    S.addonSel = null;
+    try {
+      const r = await apiTimeout('source-del', [id], 30000);
+      toast(r.message, r.ok ? 'ok' : 'err');
+      S.addonSel = null;
+    } finally {
+      setSyncBusy(false);
+    }
     refreshAll();
   }
 
   async function cancelOp() {
     const btn = $('pg-cancel');
     if (btn) btn.disabled = true;
-    const r = await api('cancel');
-    if (r.ok) {
-      if (S.op) {
-        S.op.cancelling = true;
-        updateProgress(S.op);
+    try {
+      const r = await apiTimeout('cancel', [], 15000);
+      if (r.ok) {
+        if (S.op) {
+          S.op.cancelling = true;
+          updateProgress(S.op);
+        }
+      } else {
+        toast(r.message, 'warn');
       }
-    } else {
-      toast(r.message, 'warn');
+    } finally {
       if (btn && S.op) btn.disabled = !S.op.cancellable;
     }
   }
@@ -1547,21 +1584,27 @@
       if (!ok) return;
       Modal.close();
       setSyncBusy(true);
-      const r = await api('disable');
-      setSyncBusy(false);
-      toast(r.message, r.ok ? 'warn' : 'err');
+      try {
+        const r = await apiTimeout('disable', [], 20000);
+        toast(r.message, r.ok ? 'warn' : 'err');
+      } finally {
+        setSyncBusy(false);
+      }
       refreshAll();
       return;
     }
     setSyncBusy(true);
-    const r = await api('enable');
-    setSyncBusy(false);
-    if (r.ok && r.code === 'started') {
-      S.opView = true;
-      handleOp(r.data.op);
-      schedulePoll(400);
-    } else {
-      toast(r.message, r.ok ? 'ok' : 'err');
+    try {
+      const r = await apiTimeout('enable', [], 20000);
+      if (r.ok && r.code === 'started') {
+        S.opView = true;
+        handleOp(r.data.op);
+        schedulePoll(400);
+      } else {
+        toast(r.message, r.ok ? 'ok' : 'err');
+      }
+    } finally {
+      setSyncBusy(false);
     }
     refreshAll();
   }
@@ -1580,7 +1623,8 @@
       okClass: 'btn-warn'
     });
     if (!ok) return;
-    const r = await api('reboot');
+    Modal.show({ icon: '🔁', title: '正在重启…', body: [para('正在发送重启请求…', 'center')], actions: [], dismissible: false, view: 'reboot' });
+    const r = await apiTimeout('reboot', [], 15000);
     if (r.ok) {
       Modal.show({ icon: '🔁', title: '正在重启…', body: [para('稍后见。重启后新设置即会生效。', 'center')], actions: [], dismissible: false, view: 'reboot' });
     } else {
@@ -1616,30 +1660,33 @@
   async function showStatusDialog() {
     const btn = $('act-status');
     btn.disabled = true;
-    const r = await api('status');
-    btn.disabled = false;
-    if (!r.ok) {
-      toast(r.message, 'err');
-      return;
+    try {
+      const r = await apiTimeout('status', [], 20000);
+      if (!r.ok) {
+        toast(r.message, 'err');
+        return;
+      }
+      S.status = r.data;
+      renderStatus();
+      const st = r.data;
+      const list = h('div', { class: 'kv-list' }, statusRows(st).map((row) => h('div', { class: 'kv' }, h('span', { class: 'k', text: row[0] }), h('span', { class: 'v', text: row[1] }))));
+      const body = [list];
+      if (st.conflicts && st.conflicts.length) {
+        const names = st.conflicts.map((c) => (c === 'hosts' ? '系统 hosts 模块' : c)).join(', ');
+        body.push(note('⚠️ 以下模块也会替换 /system/etc/hosts：' + names + '。请停用它们，HostKeeper 才能正常工作。', 'warn'));
+      }
+      if (st.adaway) body.push(note('⚠️ 检测到 AdAway。请不要同时使用它的 root 或 systemless 模式与 HostKeeper。', 'warn'));
+      if (st.applied === 'pending') body.push(note('🔁 最新更改已保存，将在重启后生效。'));
+      if (st.applied === 'inactive') {
+        body.push(note(st.mount === 'failed'
+          ? '🔴 Android 未使用 HostKeeper 的 hosts 文件，且开机挂载失败。请查看 📜 日志 了解详情。'
+          : '🔴 Android 尚未使用 HostKeeper 的 hosts 文件。请重启，HostKeeper 会在开机时自动挂载。', 'err'));
+      }
+      if (st.applied === 'applied' && st.mount === 'self') body.push(note('🔗 Root 管理器没有挂载 hosts 文件，因此 HostKeeper 直接进行了挂载。拦截工作正常。'));
+      Modal.show({ icon: '📊', title: '状态', body: body, view: 'status', actions: gotIt() });
+    } finally {
+      btn.disabled = false;
     }
-    S.status = r.data;
-    renderStatus();
-    const st = r.data;
-    const list = h('div', { class: 'kv-list' }, statusRows(st).map((row) => h('div', { class: 'kv' }, h('span', { class: 'k', text: row[0] }), h('span', { class: 'v', text: row[1] }))));
-    const body = [list];
-    if (st.conflicts && st.conflicts.length) {
-      const names = st.conflicts.map((c) => (c === 'hosts' ? '系统 hosts 模块' : c)).join(', ');
-      body.push(note('⚠️ 以下模块也会替换 /system/etc/hosts：' + names + '。请停用它们，HostKeeper 才能正常工作。', 'warn'));
-    }
-    if (st.adaway) body.push(note('⚠️ 检测到 AdAway。请不要同时使用它的 root 或 systemless 模式与 HostKeeper。', 'warn'));
-    if (st.applied === 'pending') body.push(note('🔁 最新更改已保存，将在重启后生效。'));
-    if (st.applied === 'inactive') {
-      body.push(note(st.mount === 'failed'
-        ? '🔴 Android 未使用 HostKeeper 的 hosts 文件，且开机挂载失败。请查看 📜 日志 了解详情。'
-        : '🔴 Android 尚未使用 HostKeeper 的 hosts 文件。请重启，HostKeeper 会在开机时自动挂载。', 'err'));
-    }
-    if (st.applied === 'applied' && st.mount === 'self') body.push(note('🔗 Root 管理器没有挂载 hosts 文件，因此 HostKeeper 直接进行了挂载。拦截工作正常。'));
-    Modal.show({ icon: '📊', title: '状态', body: body, view: 'status', actions: gotIt() });
   }
 
   function switchRow(name, desc, on, onToggle) {
@@ -1649,7 +1696,7 @@
   }
 
   async function saveSetting(key, value) {
-    const r = await api('set', [key, String(value)]);
+    const r = await apiTimeout('set', [key, String(value)], 20000);
     toast(r.message, r.ok ? 'ok' : 'err');
     await loadStatus();
     return r;
@@ -1661,9 +1708,12 @@
     const live = switchRow('⚡ 即时生效', '把更改直接写入已挂载的 hosts 文件，无需重启即可生效。关闭后恢复经典方式：替换文件并重启。', !!st.live, async (sw) => {
       const next = sw.getAttribute('aria-checked') !== 'true';
       sw.disabled = true;
-      const r = await saveSetting('live', next ? 1 : 0);
-      sw.disabled = false;
-      if (r.ok) sw.setAttribute('aria-checked', next ? 'true' : 'false');
+      try {
+        const r = await saveSetting('live', next ? 1 : 0);
+        if (r.ok) sw.setAttribute('aria-checked', next ? 'true' : 'false');
+      } finally {
+        sw.disabled = false;
+      }
     });
     const seg = h('div', { class: 'seg seg-4', role: 'tablist', 'aria-label': '自动更新间隔' });
     const paint = (v) => {
@@ -1677,9 +1727,12 @@
       const b = h('button', { class: 'seg-btn', type: 'button', role: 'tab', 'data-v': String(c[0]), text: c[1] });
       b.addEventListener('click', async () => {
         for (let i = 0; i < seg.children.length; i++) seg.children[i].disabled = true;
-        const r = await saveSetting('autoupdate', c[0]);
-        for (let i = 0; i < seg.children.length; i++) seg.children[i].disabled = false;
-        if (r.ok) paint(c[0]);
+        try {
+          const r = await saveSetting('autoupdate', c[0]);
+          if (r.ok) paint(c[0]);
+        } finally {
+          for (let i = 0; i < seg.children.length; i++) seg.children[i].disabled = false;
+        }
       });
       seg.appendChild(b);
     });
@@ -1715,12 +1768,16 @@
   }
 
   async function showDiag() {
-    const btn = $('act-diag');
-    btn.disabled = true;
+    // 不再用 disabled 锁死按钮：即使上一次请求卡住，重开窗口/再点也能重新发起。
+    const seq = (showDiag.seq = (showDiag.seq || 0) + 1);
     Modal.show({ icon: '🩺', title: '健康检查', body: [para('正在检查 hosts 文件、挂载状态、列表和网络…', 'center')], view: 'diag', actions: [] });
-    const r = await api('diag');
-    btn.disabled = false;
-    if (Modal.view() !== 'diag') return;
+    let r;
+    try {
+      r = await apiTimeout('diag', [], 25000);
+    } catch (e) {
+      r = { ok: false, code: 'bridge', message: '❌ 健康检查请求失败：' + ((e && e.message) || e), data: {} };
+    }
+    if (seq !== showDiag.seq || Modal.view() !== 'diag') return;
     if (!r.ok) {
       Modal.show({ icon: '❌', title: '健康检查失败', body: [para(stripLead(r.message), 'center')], view: 'result', actions: gotIt() });
       return;
@@ -1754,7 +1811,7 @@
   }
 
   async function showReport(diag) {
-    const r = await api('status');
+    const r = await apiTimeout('status', [], 15000);
     if (!r.ok) {
       toast(r.message, 'err');
       return;
@@ -1774,9 +1831,12 @@
     if (!ok) return;
     Modal.close();
     setSyncBusy(true);
-    const r = await api('repair');
-    setSyncBusy(false);
-    toast(r.message, r.ok ? 'ok' : 'err');
+    try {
+      const r = await apiTimeout('repair', [], 40000);
+      toast(r.message, r.ok ? 'ok' : 'err');
+    } finally {
+      setSyncBusy(false);
+    }
     refreshAll();
   }
 
@@ -1870,9 +1930,13 @@
     const label = btn.textContent;
     btn.textContent = '⏳ 保存中…';
     setSyncBusy(true);
-    const res = await api('rule-add', [type, r.domain]);
-    setSyncBusy(false);
-    btn.textContent = label;
+    let res = { ok: false, code: 'bridge', message: FAIL.bridge, data: {} };
+    try {
+      res = await apiTimeout('rule-add', [type, r.domain], 25000);
+    } finally {
+      setSyncBusy(false);
+      btn.textContent = label;
+    }
     if (res.ok) {
       input.value = '';
       setRuleMsg('', '');
@@ -1892,8 +1956,13 @@
     if (S.busy || S.syncBusy) return false;
     if (btn) btn.disabled = true;
     setSyncBusy(true);
-    const res = await api('rule-del', [type, domain]);
-    setSyncBusy(false);
+    let res = { ok: false, code: 'bridge', message: FAIL.bridge, data: {} };
+    try {
+      res = await apiTimeout('rule-del', [type, domain], 25000);
+    } finally {
+      setSyncBusy(false);
+      if (btn) btn.disabled = false;
+    }
     if (res.ok) {
       takeRules(res.data);
       renderRules();
@@ -1902,7 +1971,6 @@
       loadLogs();
       return true;
     }
-    if (btn) btn.disabled = false;
     toast(res.message, 'err');
     return false;
   }
@@ -1973,15 +2041,18 @@
     }
     const btn = $('rule-check');
     btn.disabled = true;
-    const r = await api('lookup', [q]);
-    btn.disabled = false;
-    if (!r.ok) {
-      hideLookup();
-      setRuleMsg(r.message, 'err');
-      return;
+    try {
+      const r = await apiTimeout('lookup', [q], 20000);
+      if (!r.ok) {
+        hideLookup();
+        setRuleMsg(r.message, 'err');
+        return;
+      }
+      setRuleMsg('', '');
+      renderLookup(r);
+    } finally {
+      btn.disabled = false;
     }
-    setRuleMsg('', '');
-    renderLookup(r);
   }
 
   function rulesAsText() {
@@ -2066,7 +2137,7 @@
     let added = 0;
     let skipped = 0;
     for (let i = 0; i < batches.length; i++) {
-      last = await api('rules-import', [batches[i][0].join(','), batches[i][1].join(','), i === 0 ? mode : 'merge']);
+      last = await apiTimeout('rules-import', [batches[i][0].join(','), batches[i][1].join(','), i === 0 ? mode : 'merge'], 30000);
       const d = last.data || {};
       added += Number(d.added) || 0;
       skipped += (Number(d.invalid) || 0) + (Number(d.duplicate) || 0) + (Number(d.conflict) || 0) + (Number(d.limit) || 0);
@@ -2135,8 +2206,12 @@
       }
       Modal.close();
       setSyncBusy(true);
-      const r = await sendImport(p.allow, p.block, mode);
-      setSyncBusy(false);
+      let r = { ok: false, code: 'bridge', message: FAIL.bridge, data: {} };
+      try {
+        r = await sendImport(p.allow, p.block, mode);
+      } finally {
+        setSyncBusy(false);
+      }
       takeRules(r.data);
       renderRules();
       toast(r.message, r.ok ? 'ok' : (r.code === 'import_nothing' ? 'info' : 'err'));
@@ -2166,10 +2241,14 @@
     if (id && cards[id]) {
       cards[id].retry.disabled = true;
     }
-    const r = await api('meta-refresh', id ? [id] : []);
+    let r = { ok: false, code: 'bridge', message: FAIL.bridge, data: {} };
+    try {
+      r = await apiTimeout('meta-refresh', id ? [id] : [], 25000);
+    } finally {
+      if (id && cards[id]) cards[id].retry.disabled = false;
+    }
     if (!r.ok) {
       toast(r.message, 'err');
-      if (id && cards[id]) cards[id].retry.disabled = false;
       return;
     }
     if (S.lists) {
@@ -2203,7 +2282,7 @@
     });
     if (!ok) return;
     Modal.close();
-    const r = await api('logs-clear');
+    const r = await apiTimeout('logs-clear', [], 15000);
     toast(r.message, r.ok ? 'ok' : 'err');
     loadLogs();
   }
@@ -2219,12 +2298,12 @@
   }
 
   async function openLink(id) {
-    const r = await api('open', [id]);
+    const r = await apiTimeout('open', [id], 15000);
     toast(r.message, r.ok ? 'info' : 'err');
   }
 
   async function loadStatus() {
-    const r = await api('status');
+    const r = await apiTimeout('status', [], 20000);
     if (r.ok) {
       S.status = r.data;
       if (r.data.op && r.data.op.running) S.busy = true;
@@ -2243,7 +2322,7 @@
   }
 
   async function loadLists() {
-    const r = await api('lists');
+    const r = await apiTimeout('lists', [], 20000);
     if (r.ok) {
       S.lists = r.data;
       S.refreshing = !!r.data.refreshing;
@@ -2254,7 +2333,7 @@
   }
 
   async function loadRules() {
-    const r = await api('rules');
+    const r = await apiTimeout('rules', [], 20000);
     if (r.ok) {
       S.rules = { allow: r.data.allow || [], block: r.data.block || [] };
       renderRules();
@@ -2263,7 +2342,7 @@
   }
 
   async function loadLogs() {
-    const r = await api('logs');
+    const r = await apiTimeout('logs', [], 20000);
     if (r.ok) {
       S.logs = r.data.logs || [];
       renderLogs();
