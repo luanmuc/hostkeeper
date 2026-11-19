@@ -10,7 +10,7 @@
 - 工程检查：`scripts/check.sh` 增加下载回退、meta full 回退、`apiTimeout`、健康检查超时/过期响应契约
 - 回归：主机侧 UI 22/22 PASS、操作按钮 8/8 PASS、Bridge 3/3 PASS、`check.sh` 全绿；镜像回退用无效主源实测成功
 - 版本：v1.0.6 → v1.0.7，versionCode 7 → 8
-- 状态：已推送 `origin/main`（`c560dfc`）；尚未创建 GitHub Release
+- 状态：已推送 `origin/main`（`c560dfc`）；已发布 GitHub Pre-release `v1.0.7`
 
 ## v1.0.6（2026-11-19）
 
