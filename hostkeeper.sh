@@ -1,29 +1,29 @@
 #!/system/bin/sh
 
-if [ "${SB_EXEC:-}" != "$$" ]; then
+if [ "${HK_EXEC:-}" != "$$" ]; then
   for _bb in /data/adb/magisk/busybox /data/adb/ksu/bin/busybox /data/adb/ap/bin/busybox; do
     if [ -x "$_bb" ]; then
-      SB_BB=$_bb
-      SB_EXEC=$$
+      HK_BB=$_bb
+      HK_EXEC=$$
       ASH_STANDALONE=1
-      export SB_BB SB_EXEC ASH_STANDALONE
+      export HK_BB HK_EXEC ASH_STANDALONE
       exec "$_bb" sh "$0" "$@"
     fi
   done
-  SB_BB=none
-  SB_EXEC=$$
-  export SB_BB SB_EXEC
+  HK_BB=none
+  HK_EXEC=$$
+  export HK_BB HK_EXEC
 fi
 
 umask 022
 PATH=/system/bin:/system/xbin:/vendor/bin:${PATH:-/bin}
 export PATH
 
-SB_VER=v1.0.0
-SB_VCODE=1
+HK_VER=v1.0.1
+HK_VCODE=2
 SELF=$0
 case $SELF in /*) ;; *) SELF=$(pwd)/$SELF ;; esac
-MODDIR=${SB_MODDIR:-${SELF%/*}}
+MODDIR=${HK_MODDIR:-${SELF%/*}}
 MODROOT=/data/adb/modules
 DATA=/data/adb/hostkeeper
 CFG=$DATA/config
@@ -55,6 +55,14 @@ DLHDR=$TMPD/download.hdr
 HOSTSD=$MODDIR/system/etc
 HOSTS=$HOSTSD/hosts
 PROP=$MODDIR/module.prop
+# module.prop is the single source of truth for the version; HK_VER/HK_VCODE above are fallbacks only.
+if [ -f "$PROP" ]; then
+  _hk_ver=$(sed -n 's/^version=//p' "$PROP" 2>/dev/null | head -n 1)
+  _hk_vcode=$(sed -n 's/^versionCode=//p' "$PROP" 2>/dev/null | head -n 1)
+  [ -n "$_hk_ver" ] && HK_VER=$_hk_ver
+  case $_hk_vcode in '' | *[!0-9]*) ;; *) HK_VCODE=$_hk_vcode ;; esac
+  unset _hk_ver _hk_vcode
+fi
 SYS_HOSTS=/system/etc/hosts
 INIT_HOSTS=/proc/1/root/system/etc/hosts
 INIT_NS=/proc/1/ns/mnt
@@ -68,9 +76,9 @@ CUSTOM_MAX=8
 LOG_MAX=500
 STALE_DAYS=7
 SCHED_TICK=900
-UA="HostKeeper/1.0"
+UA="HostKeeper/${HK_VER#v}"
 BASE_IDS="stevenblack hblock hagezi-light hagezi-normal hagezi-pro hagezi-proplus hagezi-ultimate"
-ADDON_IDS="sb-fakenews sb-gambling sb-adult sb-social hz-doh hz-tif hz-xiaomi hz-samsung hz-huawei hz-oppo hz-vivo hz-amazon hz-tiktok hz-microsoft"
+ADDON_IDS="stevenblack-fakenews stevenblack-gambling stevenblack-adult stevenblack-social hagezi-doh hagezi-tif hagezi-xiaomi hagezi-samsung hagezi-huawei hagezi-oppo hagezi-vivo hagezi-amazon hagezi-tiktok hagezi-microsoft"
 LOCAL_LINE='127.0.0.1 localhost'
 LOCAL6_LINE='::1 localhost ip6-localhost'
 MODE=cli
@@ -81,15 +89,15 @@ NL='
 '
 CR=$(printf '\r')
 TAB=$(printf '\t')
-SB_RAW=https://raw.githubusercontent.com/StevenBlack/hosts/refs/heads/master
-HZ_RAW=https://raw.githubusercontent.com/hagezi/dns-blocklists-legacy/refs/heads/main/hosts
+STEVENBLACK_RAW=https://raw.githubusercontent.com/StevenBlack/hosts/refs/heads/master
+HAGEZI_RAW=https://raw.githubusercontent.com/hagezi/dns-blocklists-legacy/refs/heads/main/hosts
 
 list_info() {
   L_KIND=base; L_GROUP=; L_LEVEL=; L_LEVELTXT=; L_ICON=; L_WARN=; L_MIN=1000; L_CUSTOM=0
   case $1 in
     stevenblack)
       L_NAME='StevenBlack Main'; L_GROUP=unified; L_LEVEL=green; L_LEVELTXT=Balanced
-      L_URL="$SB_RAW/hosts"
+      L_URL="$STEVENBLACK_RAW/hosts"
       L_DESC='Classic unified list for ads and malware, with very few false positives.' ;;
     hblock)
       L_NAME='hBlock'; L_GROUP=unified; L_LEVEL=blue; L_LEVELTXT=Mixed
@@ -97,79 +105,79 @@ list_info() {
       L_DESC='Merges dozens of public blocklists into one broad, all-purpose list.' ;;
     hagezi-light)
       L_NAME='HaGeZi Light'; L_GROUP=hagezi; L_LEVEL=green; L_LEVELTXT=Basic
-      L_URL="$HZ_RAW/light.txt"
+      L_URL="$HAGEZI_RAW/light.txt"
       L_DESC='Basic protection from ads, tracking and telemetry. Built to break nothing.' ;;
     hagezi-normal)
       L_NAME='HaGeZi Normal'; L_GROUP=hagezi; L_LEVEL=blue; L_LEVELTXT=All-round
-      L_URL="$HZ_RAW/multi.txt"
+      L_URL="$HAGEZI_RAW/multi.txt"
       L_DESC='All-round protection from ads, tracking, phishing, malware and scams.' ;;
     hagezi-pro)
       L_NAME='HaGeZi Pro'; L_GROUP=hagezi; L_LEVEL=yellow; L_LEVELTXT=Extended
-      L_URL="$HZ_RAW/pro.txt"
+      L_URL="$HAGEZI_RAW/pro.txt"
       L_DESC='Extended protection with many more trackers. May need an allow rule.' ;;
     hagezi-proplus)
       L_NAME='HaGeZi Pro++'; L_GROUP=hagezi; L_LEVEL=orange; L_LEVELTXT=Aggressive
-      L_URL="$HZ_RAW/pro.plus.txt"
+      L_URL="$HAGEZI_RAW/pro.plus.txt"
       L_DESC='Aggressive blocking. Some legitimate sites or app features may break.' ;;
     hagezi-ultimate)
       L_NAME='HaGeZi Ultimate'; L_GROUP=hagezi; L_LEVEL=red; L_LEVELTXT=Maximum
-      L_URL="$HZ_RAW/ultimate.txt"
+      L_URL="$HAGEZI_RAW/ultimate.txt"
       L_DESC='The most aggressive list. Can restrict app and website features.' ;;
-    sb-fakenews)
+    stevenblack-fakenews)
       L_KIND=addon; L_GROUP=content; L_ICON='🗞️'; L_MIN=100; L_NAME='Fake news'
-      L_URL="$SB_RAW/alternates/fakenews-only/hosts"
+      L_URL="$STEVENBLACK_RAW/alternates/fakenews-only/hosts"
       L_DESC='Sites known for publishing fabricated news stories.' ;;
-    sb-gambling)
+    stevenblack-gambling)
       L_KIND=addon; L_GROUP=content; L_ICON='🎰'; L_MIN=100; L_NAME='Gambling'
-      L_URL="$SB_RAW/alternates/gambling-only/hosts"
+      L_URL="$STEVENBLACK_RAW/alternates/gambling-only/hosts"
       L_DESC='Online casinos, betting and lottery sites.' ;;
-    sb-adult)
+    stevenblack-adult)
       L_KIND=addon; L_GROUP=content; L_ICON='🔞'; L_MIN=1000; L_NAME='Adult content'
-      L_URL="$SB_RAW/alternates/porn-only/hosts"
+      L_URL="$STEVENBLACK_RAW/alternates/porn-only/hosts"
       L_DESC='Pornography and other adult sites. A solid base for a family-safe device.' ;;
-    sb-social)
+    stevenblack-social)
       L_KIND=addon; L_GROUP=content; L_ICON='👥'; L_MIN=100; L_WARN=breaks; L_NAME='Social networks'
-      L_URL="$SB_RAW/alternates/social-only/hosts"
+      L_URL="$STEVENBLACK_RAW/alternates/social-only/hosts"
       L_DESC='Blocks the social networks themselves, such as Facebook, Instagram and X.' ;;
-    hz-doh)
+    hagezi-doh)
       L_KIND=addon; L_GROUP=security; L_ICON='🔐'; L_MIN=100; L_WARN=dns; L_NAME='Encrypted DNS bypass'
-      L_URL="$HZ_RAW/doh.txt"
+      L_URL="$HAGEZI_RAW/doh.txt"
       L_DESC='Blocks public DNS-over-HTTPS servers so apps can’t sidestep your hosts file.' ;;
-    hz-tif)
+    hagezi-tif)
       L_KIND=addon; L_GROUP=security; L_ICON='🦠'; L_MIN=1000; L_WARN=heavy; L_NAME='Threat Intelligence'
-      L_URL="$HZ_RAW/tif.txt"
+      L_URL="$HAGEZI_RAW/tif.txt"
       L_DESC='Malware, phishing and scam domains. Very large, with over a million entries.' ;;
-    hz-xiaomi)
+    hagezi-xiaomi)
       L_KIND=addon; L_GROUP=tracker; L_ICON='📱'; L_MIN=20; L_NAME='Xiaomi'
-      L_URL="$HZ_RAW/native.xiaomi.txt"
+      L_URL="$HAGEZI_RAW/native.xiaomi.txt"
       L_DESC='Telemetry and ad domains built into Xiaomi, Redmi and POCO devices.' ;;
-    hz-samsung)
+    hagezi-samsung)
       L_KIND=addon; L_GROUP=tracker; L_ICON='📱'; L_MIN=20; L_NAME='Samsung'
-      L_URL="$HZ_RAW/native.samsung.txt"
+      L_URL="$HAGEZI_RAW/native.samsung.txt"
       L_DESC='Telemetry and ad domains built into Samsung devices.' ;;
-    hz-huawei)
+    hagezi-huawei)
       L_KIND=addon; L_GROUP=tracker; L_ICON='📱'; L_MIN=20; L_NAME='Huawei'
-      L_URL="$HZ_RAW/native.huawei.txt"
+      L_URL="$HAGEZI_RAW/native.huawei.txt"
       L_DESC='Telemetry and ad domains built into Huawei and Honor devices.' ;;
-    hz-oppo)
+    hagezi-oppo)
       L_KIND=addon; L_GROUP=tracker; L_ICON='📱'; L_MIN=20; L_NAME='OPPO & Realme'
-      L_URL="$HZ_RAW/native.oppo-realme.txt"
+      L_URL="$HAGEZI_RAW/native.oppo-realme.txt"
       L_DESC='Telemetry and ad domains built into OPPO, Realme and OnePlus devices.' ;;
-    hz-vivo)
+    hagezi-vivo)
       L_KIND=addon; L_GROUP=tracker; L_ICON='📱'; L_MIN=20; L_NAME='Vivo'
-      L_URL="$HZ_RAW/native.vivo.txt"
+      L_URL="$HAGEZI_RAW/native.vivo.txt"
       L_DESC='Telemetry and ad domains built into Vivo and iQOO devices.' ;;
-    hz-amazon)
+    hagezi-amazon)
       L_KIND=addon; L_GROUP=tracker; L_ICON='📦'; L_MIN=20; L_NAME='Amazon'
-      L_URL="$HZ_RAW/native.amazon.txt"
+      L_URL="$HAGEZI_RAW/native.amazon.txt"
       L_DESC='Tracking built into Amazon devices and apps.' ;;
-    hz-tiktok)
+    hagezi-tiktok)
       L_KIND=addon; L_GROUP=tracker; L_ICON='🎵'; L_MIN=20; L_NAME='TikTok'
-      L_URL="$HZ_RAW/native.tiktok.txt"
+      L_URL="$HAGEZI_RAW/native.tiktok.txt"
       L_DESC='Tracking and fingerprinting domains used by TikTok.' ;;
-    hz-microsoft)
+    hagezi-microsoft)
       L_KIND=addon; L_GROUP=tracker; L_ICON='🪟'; L_MIN=20; L_NAME='Microsoft'
-      L_URL="$HZ_RAW/native.winoffice.txt"
+      L_URL="$HAGEZI_RAW/native.winoffice.txt"
       L_DESC='Telemetry from Windows, Office and other Microsoft apps.' ;;
     c-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])
       custom_info "$1" || return 1 ;;
@@ -629,7 +637,7 @@ reply() {
   _rp_d=${4:-}
   [ -n "$_rp_d" ] || _rp_d='{}'
   js "$3"
-  [ "$1" = true ] || SB_RC=1
+  [ "$1" = true ] || HK_RC=1
   printf '{"ok":%s,"code":"%s","message":%s,"data":%s}\n' "$1" "$2" "$JS" "$_rp_d"
 }
 
@@ -763,7 +771,7 @@ lock_alive() {
     return
   fi
   [ -d "/proc/$_la" ] || return 1
-  grep -q 'sb\.sh' "/proc/$_la/cmdline" 2>/dev/null || return 1
+  grep -q 'hostkeeper\.sh' "/proc/$_la/cmdline" 2>/dev/null || return 1
   return 0
 }
 
@@ -903,9 +911,9 @@ spawn() {
   _sp_mark=$RUND/spawn.$$.$(date +%s)
   rm -f "$_sp_mark"
   if has setsid; then
-    SB_SPAWN_MARK=$_sp_mark setsid sh "$SELF" "$@" < /dev/null > "$_sp_out" 2>&1 &
+    HK_SPAWN_MARK=$_sp_mark setsid sh "$SELF" "$@" < /dev/null > "$_sp_out" 2>&1 &
   else
-    SB_SPAWN_MARK=$_sp_mark nohup sh "$SELF" "$@" < /dev/null > "$_sp_out" 2>&1 &
+    HK_SPAWN_MARK=$_sp_mark nohup sh "$SELF" "$@" < /dev/null > "$_sp_out" 2>&1 &
   fi
   _sp_i=0
   while [ "$_sp_i" -lt 50 ]; do
@@ -919,7 +927,7 @@ spawn() {
   return 1
 }
 
-spawned() { [ -n "${SB_SPAWN_MARK:-}" ] && : > "$SB_SPAWN_MARK"; unset SB_SPAWN_MARK; return 0; }
+spawned() { [ -n "${HK_SPAWN_MARK:-}" ] && : > "$HK_SPAWN_MARK"; unset HK_SPAWN_MARK; return 0; }
 
 dl_detect() {
   [ -n "$DL_TOOL" ] && [ "$DL_TOOL" != none ] && return 0
@@ -966,7 +974,7 @@ dl_get() {
       ;;
     wget)
       if [ "$_dg_m" = peek ]; then
-        sh -c 'wget -q -S -T 15 -U "$1" -O - "$2" 2> "$3" | head -c 8192 > "$4"' sb-peek "$UA" "$_dg_u" "$_dg_h" "$_dg_o" &
+        sh -c 'wget -q -S -T 15 -U "$1" -O - "$2" 2> "$3" | head -c 8192 > "$4"' hostkeeper-peek "$UA" "$_dg_u" "$_dg_h" "$_dg_o" &
       else
         wget -q -S -T 15 -U "$UA" -O "$_dg_o" "$_dg_u" 2> "$_dg_h" &
       fi
@@ -1256,7 +1264,7 @@ put_hosts() {
 
 write_clean_hosts() {
   mkdir -p "$HOSTSD"
-  printf '%s\n%s\n' "$LOCAL_LINE" "$LOCAL6_LINE" > "$HOSTSD/.hosts.sbclean" && put_hosts "$HOSTSD/.hosts.sbclean" inplace && sum_record 0
+  printf '%s\n%s\n' "$LOCAL_LINE" "$LOCAL6_LINE" > "$HOSTSD/.hosts.hkclean" && put_hosts "$HOSTSD/.hosts.hkclean" inplace && sum_record 0
 }
 
 backup_hosts() {
@@ -1277,22 +1285,22 @@ backup_hosts() {
 
 restore_backup() {
   for _rb in 1 2 3; do
-    rm -f "$HOSTSD/.hosts.sbrestore"
+    rm -f "$HOSTSD/.hosts.hkrestore"
     if [ -f "$BACKUPD/hosts.$_rb.gz" ]; then
-      gzip -dc "$BACKUPD/hosts.$_rb.gz" > "$HOSTSD/.hosts.sbrestore" 2>/dev/null || continue
+      gzip -dc "$BACKUPD/hosts.$_rb.gz" > "$HOSTSD/.hosts.hkrestore" 2>/dev/null || continue
     elif [ -f "$BACKUPD/hosts.$_rb" ]; then
-      cp -f "$BACKUPD/hosts.$_rb" "$HOSTSD/.hosts.sbrestore" 2>/dev/null || continue
+      cp -f "$BACKUPD/hosts.$_rb" "$HOSTSD/.hosts.hkrestore" 2>/dev/null || continue
     else
       continue
     fi
-    hosts_sane "$HOSTSD/.hosts.sbrestore" || continue
-    if put_hosts "$HOSTSD/.hosts.sbrestore" inplace; then
+    hosts_sane "$HOSTSD/.hosts.hkrestore" || continue
+    if put_hosts "$HOSTSD/.hosts.hkrestore" inplace; then
       rm -f "$SUMF"
       log WARN "Restored the previous hosts file from backup $_rb"
       return 0
     fi
   done
-  rm -f "$HOSTSD/.hosts.sbrestore"
+  rm -f "$HOSTSD/.hosts.hkrestore"
   write_clean_hosts
   log ERROR "No usable backup was found; wrote a clean localhost-only hosts file"
   return 1
@@ -1363,16 +1371,16 @@ repair_hosts() {
     log WARN "The hosts file didn’t match its checksum; rebuilding it"
   fi
   mkdir -p "$HOSTSD"
-  rm -f "$HOSTSD/.hosts.sbnew"
+  rm -f "$HOSTSD/.hosts.hknew"
   cfg_load
   _rh=0
   if [ "$C_ENABLED" != 1 ]; then
-    compile_into "$HOSTSD/.hosts.sbnew" 0 && _rh=1
+    compile_into "$HOSTSD/.hosts.hknew" 0 && _rh=1
   elif [ "$C_SETUP" = ready ] && sources_ready; then
-    compile_into "$HOSTSD/.hosts.sbnew" 1 && _rh=1
+    compile_into "$HOSTSD/.hosts.hknew" 1 && _rh=1
   fi
-  if [ "$_rh" = 1 ] && hosts_sane "$HOSTSD/.hosts.sbnew"; then
-    if put_hosts "$HOSTSD/.hosts.sbnew" inplace; then
+  if [ "$_rh" = 1 ] && hosts_sane "$HOSTSD/.hosts.hknew"; then
+    if put_hosts "$HOSTSD/.hosts.hknew" inplace; then
       C_DOMAINS=$CH_COUNT
       cfg_save
       stats_commit
@@ -1381,7 +1389,7 @@ repair_hosts() {
       return 0
     fi
   fi
-  rm -f "$HOSTSD/.hosts.sbnew"
+  rm -f "$HOSTSD/.hosts.hknew"
   write_clean_hosts || return 1
   log WARN "The hosts file was missing or damaged; wrote a clean localhost-only file"
   return 0
@@ -1396,8 +1404,8 @@ bind_hosts() {
   if in_init_ns; then
     mount -o bind "$HOSTS" "$MOUNT_TARGET" 2>/dev/null && return 0
   fi
-  if [ "$SB_BB" != none ]; then
-    "$SB_BB" nsenter -t 1 -m -- "$SB_BB" mount -o bind "$HOSTS" "$MOUNT_TARGET" 2>/dev/null && return 0
+  if [ "$HK_BB" != none ]; then
+    "$HK_BB" nsenter -t 1 -m -- "$HK_BB" mount -o bind "$HOSTS" "$MOUNT_TARGET" 2>/dev/null && return 0
   fi
   if [ -x /system/bin/nsenter ]; then
     /system/bin/nsenter -t 1 -m -- /system/bin/mount -o bind "$HOSTS" "$MOUNT_TARGET" 2>/dev/null && return 0
@@ -1527,7 +1535,7 @@ describe() {
 set_description() {
   [ -f "$PROP" ] || return 0
   describe
-  awk -v d="$R_DESC" 'BEGIN { f = 0 } /^description=/ { if (!f) print "description=" d; f = 1; next } { print } END { if (!f) print "description=" d }' "$PROP" > "$PROP.sbtmp" 2>/dev/null && mv -f "$PROP.sbtmp" "$PROP"
+  awk -v d="$R_DESC" 'BEGIN { f = 0 } /^description=/ { if (!f) print "description=" d; f = 1; next } { print } END { if (!f) print "description=" d }' "$PROP" > "$PROP.hktmp" 2>/dev/null && mv -f "$PROP.hktmp" "$PROP"
   chmod 0644 "$PROP" 2>/dev/null
   return 0
 }
@@ -1588,7 +1596,7 @@ detect_manager() {
   case $MGR_VER in *' '*) MGR_VER=${MGR_VER##* } ;; esac
   MGR_VER=$(clean_val "$MGR_VER")
   MGR_HTTPD=no
-  [ "$SB_BB" != none ] && "$SB_BB" --list 2>/dev/null | grep -qx httpd && MGR_HTTPD=yes
+  [ "$HK_BB" != none ] && "$HK_BB" --list 2>/dev/null | grep -qx httpd && MGR_HTTPD=yes
   [ -d "$RUND" ] && printf '%s\n%s\n%s\n%s\n' "$_dm_b" "$MGR_NAME" "$MGR_VER" "$MGR_HTTPD" > "$RUND/manager" 2>/dev/null
   return 0
 }
@@ -1609,12 +1617,12 @@ device_addon() {
   _da=$(printf '%s' "$_da" | tr '[:upper:]\n' '[:lower:] ')
   R_DEVADDON=
   case $_da in
-    *xiaomi* | *redmi* | *poco*) R_DEVADDON=hz-xiaomi ;;
-    *samsung*) R_DEVADDON=hz-samsung ;;
-    *huawei* | *honor*) R_DEVADDON=hz-huawei ;;
-    *oppo* | *realme* | *oneplus*) R_DEVADDON=hz-oppo ;;
-    *vivo* | *iqoo*) R_DEVADDON=hz-vivo ;;
-    *amazon*) R_DEVADDON=hz-amazon ;;
+    *xiaomi* | *redmi* | *poco*) R_DEVADDON=hagezi-xiaomi ;;
+    *samsung*) R_DEVADDON=hagezi-samsung ;;
+    *huawei* | *honor*) R_DEVADDON=hagezi-huawei ;;
+    *oppo* | *realme* | *oneplus*) R_DEVADDON=hagezi-oppo ;;
+    *vivo* | *iqoo*) R_DEVADDON=hagezi-vivo ;;
+    *amazon*) R_DEVADDON=hagezi-amazon ;;
   esac
   [ -d "$RUND" ] && printf '%s\n%s\n' "$_da_b" "$R_DEVADDON" > "$RUND/device" 2>/dev/null
   return 0
@@ -1822,7 +1830,7 @@ pl_download_error() {
 pl_cleanup() {
   rm -f "$DLPART" "$DLHDR" "$DLHDR.err" "$TMPD/norm.count" "$TMPD/peek.body" "$TMPD/peek.hdr" "$TMPD/peek.hdr.err" "$TMPD/compile.stats" "$RUND/cancel" "$RUND/dl.pid" 2>/dev/null
   rm -rf "$STAGED" 2>/dev/null
-  rm -f "$HOSTSD"/.hosts.sb* 2>/dev/null
+  rm -f "$HOSTSD"/.hosts.hk* 2>/dev/null
   return 0
 }
 
@@ -2062,13 +2070,13 @@ pipeline() {
   rm -f "$RUND/cancel"
   C_LIST=$PL_BASE
   C_ADDONS=$PL_ADDONS
-  if ! merge_sources "$STAGED" || ! compile_into "$HOSTSD/.hosts.sbnew" 1; then
+  if ! merge_sources "$STAGED" || ! compile_into "$HOSTSD/.hosts.hknew" 1; then
     pl_set write_failed "❌ Couldn’t build the new hosts file. Nothing was changed."
     log ERROR "Could not build the hosts file for $PL_NAME"
     pl_cleanup
     return 1
   fi
-  install_hosts "$HOSTSD/.hosts.sbnew" "$CH_COUNT" backup
+  install_hosts "$HOSTSD/.hosts.hknew" "$CH_COUNT" backup
   case $? in
     1)
       pl_set write_failed "❌ Couldn’t write the hosts file. Your previous hosts file was restored."
@@ -2149,12 +2157,12 @@ rebuild() {
   cfg_load
   if [ "$C_ENABLED" != 1 ]; then RB_STATE=disabled; return 0; fi
   if [ "$C_SETUP" != ready ] || ! sources_ready; then RB_STATE=nocache; return 0; fi
-  if ! compile_into "$HOSTSD/.hosts.sbnew" 1; then
-    rm -f "$HOSTSD/.hosts.sbnew" "$TMPD/compile.stats"
+  if ! compile_into "$HOSTSD/.hosts.hknew" 1; then
+    rm -f "$HOSTSD/.hosts.hknew" "$TMPD/compile.stats"
     RB_STATE=write_failed
     return 1
   fi
-  install_hosts "$HOSTSD/.hosts.sbnew" "$CH_COUNT"
+  install_hosts "$HOSTSD/.hosts.hknew" "$CH_COUNT"
   case $? in
     1) RB_STATE=write_failed; return 1 ;;
     2) RB_STATE=verify_failed; return 1 ;;
@@ -2345,7 +2353,7 @@ cmd_status() {
   js "$S_SRCDATE"; _st_5=$JS
   _st_hs=0
   [ -f "$HOSTS" ] && _st_hs=$(fsize "$HOSTS")
-  reply true status '' "{\"version\":\"$SB_VER\",\"versionCode\":$SB_VCODE,\"manager\":$_st_3,\"managerVersion\":$_st_4,\"enabled\":$_st_en,\"list\":\"$C_LIST\",\"listName\":$_st_1,\"level\":\"$_st_level\",\"levelText\":$_st_2,\"domains\":$C_DOMAINS,\"listCount\":$C_COUNT,\"allow\":$_st_al,\"block\":$_st_bl,\"updated\":$C_UPDATED,\"checked\":$C_CHECKED,\"sourceDate\":$_st_5,\"reboot\":$_st_rb,\"applied\":\"$R_APPLIED\",\"mount\":\"$R_MOUNT\",\"setup\":\"$C_SETUP\",\"conflicts\":$_st_cfj,\"adaway\":$_st_aa,\"httpd\":$_st_hd,\"addons\":$_st_ad,\"live\":$_st_lv,\"autoupdate\":$C_AUTO,\"sched\":$_st_sc,\"guard\":\"$C_GUARD\",\"hostsSize\":$_st_hs,\"staleDays\":$STALE_DAYS,\"now\":$(now),\"stats\":{\"base\":${ST_BASE:-0},\"allowed\":${ST_ALLOWED:-0},\"blocked\":${ST_BLOCKED:-0},\"guarded\":${ST_GUARDED:-0}},\"op\":$R_OP}"
+  reply true status '' "{\"version\":\"$HK_VER\",\"versionCode\":$HK_VCODE,\"manager\":$_st_3,\"managerVersion\":$_st_4,\"enabled\":$_st_en,\"list\":\"$C_LIST\",\"listName\":$_st_1,\"level\":\"$_st_level\",\"levelText\":$_st_2,\"domains\":$C_DOMAINS,\"listCount\":$C_COUNT,\"allow\":$_st_al,\"block\":$_st_bl,\"updated\":$C_UPDATED,\"checked\":$C_CHECKED,\"sourceDate\":$_st_5,\"reboot\":$_st_rb,\"applied\":\"$R_APPLIED\",\"mount\":\"$R_MOUNT\",\"setup\":\"$C_SETUP\",\"conflicts\":$_st_cfj,\"adaway\":$_st_aa,\"httpd\":$_st_hd,\"addons\":$_st_ad,\"live\":$_st_lv,\"autoupdate\":$C_AUTO,\"sched\":$_st_sc,\"guard\":\"$C_GUARD\",\"hostsSize\":$_st_hs,\"staleDays\":$STALE_DAYS,\"now\":$(now),\"stats\":{\"base\":${ST_BASE:-0},\"allowed\":${ST_ALLOWED:-0},\"blocked\":${ST_BLOCKED:-0},\"guarded\":${ST_GUARDED:-0}},\"op\":$R_OP}"
 }
 
 cmd_progress() { op_json; reply true progress '' "$R_OP"; }
@@ -2920,13 +2928,13 @@ cmd_disable() {
   cfg_load
   if [ "$C_ENABLED" != 1 ]; then reply false already_disabled '🔴 The blocker is already disabled.'; return 0; fi
   lock_wait "$LOCKD" || { busy_reply; return 0; }
-  if ! compile_into "$HOSTSD/.hosts.sbnew" 0; then
-    rm -f "$HOSTSD/.hosts.sbnew"
+  if ! compile_into "$HOSTSD/.hosts.hknew" 0; then
+    rm -f "$HOSTSD/.hosts.hknew"
     lock_drop "$LOCKD"
     reply false write_failed "❌ Couldn’t write the hosts file. Nothing was changed."
     return 0
   fi
-  if ! install_hosts "$HOSTSD/.hosts.sbnew" 0; then
+  if ! install_hosts "$HOSTSD/.hosts.hknew" 0; then
     lock_drop "$LOCKD"
     reply false write_failed "❌ Couldn’t write the hosts file. Your previous hosts file was restored."
     return 0
@@ -2956,13 +2964,13 @@ cmd_enable() {
   _en_name=$L_NAME
   if [ "$C_SETUP" = ready ] && sources_ready; then
     C_ENABLED=1
-    if ! compile_into "$HOSTSD/.hosts.sbnew" 1; then
-      rm -f "$HOSTSD/.hosts.sbnew"
+    if ! compile_into "$HOSTSD/.hosts.hknew" 1; then
+      rm -f "$HOSTSD/.hosts.hknew"
       lock_drop "$LOCKD"
       reply false write_failed "❌ Couldn’t build the hosts file. Nothing was changed."
       return 0
     fi
-    if ! install_hosts "$HOSTSD/.hosts.sbnew" "$CH_COUNT"; then
+    if ! install_hosts "$HOSTSD/.hosts.hknew" "$CH_COUNT"; then
       lock_drop "$LOCKD"
       reply false write_failed "❌ Couldn’t write the hosts file. Your previous hosts file was restored."
       return 0
@@ -3178,12 +3186,12 @@ cmd_diag() {
     diag_add err downloader '⬇️ Downloader' 'Neither curl nor BusyBox wget is available, so lists can’t be downloaded.'
   fi
 
-  if [ "$SB_BB" = none ]; then
+  if [ "$HK_BB" = none ]; then
     diag_add warn busybox '🧰 BusyBox' 'No root manager BusyBox was found. HostKeeper is using system tools.'
   elif [ "$MGR_HTTPD" = yes ]; then
-    diag_add ok busybox '🧰 BusyBox' "$SB_BB with httpd for the browser WebUI."
+    diag_add ok busybox '🧰 BusyBox' "$HK_BB with httpd for the browser WebUI."
   else
-    diag_add warn busybox '🧰 BusyBox' "$SB_BB has no httpd, so the Action button can’t open the WebUI in a browser."
+    diag_add warn busybox '🧰 BusyBox' "$HK_BB has no httpd, so the Action button can’t open the WebUI in a browser."
   fi
 
   _dg_free=$(free_kb "$DATA")
@@ -3211,7 +3219,7 @@ cmd_diag() {
 
   _dg_v=
   [ -n "$MGR_VER" ] && _dg_v=" $MGR_VER"
-  diag_add info environment '📦 Environment' "HostKeeper $SB_VER ($SB_VCODE) on $MGR_NAME$_dg_v, Android $(getprop ro.build.version.release 2>/dev/null)."
+  diag_add info environment '📦 Environment' "HostKeeper $HK_VER ($HK_VCODE) on $MGR_NAME$_dg_v, Android $(getprop ro.build.version.release 2>/dev/null)."
 
   reply true diag '' "{\"checks\":[${DG%,}],\"summary\":{\"ok\":$DG_OK,\"warn\":$DG_WARN,\"err\":$DG_ERR}}"
 }
@@ -3222,17 +3230,17 @@ cmd_repair() {
   rm -f "$SUMF"
   _rp_ok=1
   if [ "$C_ENABLED" != 1 ]; then
-    if compile_into "$HOSTSD/.hosts.sbnew" 0 && install_hosts "$HOSTSD/.hosts.sbnew" 0; then :; else _rp_ok=0; fi
-    rm -f "$HOSTSD/.hosts.sbnew"
+    if compile_into "$HOSTSD/.hosts.hknew" 0 && install_hosts "$HOSTSD/.hosts.hknew" 0; then :; else _rp_ok=0; fi
+    rm -f "$HOSTSD/.hosts.hknew"
   elif [ "$C_SETUP" = ready ] && sources_ready; then
-    if compile_into "$HOSTSD/.hosts.sbnew" 1 && install_hosts "$HOSTSD/.hosts.sbnew" "$CH_COUNT"; then
+    if compile_into "$HOSTSD/.hosts.hknew" 1 && install_hosts "$HOSTSD/.hosts.hknew" "$CH_COUNT"; then
       C_DOMAINS=$CH_COUNT
       cfg_save
       stats_commit
     else
       _rp_ok=0
     fi
-    rm -f "$HOSTSD/.hosts.sbnew"
+    rm -f "$HOSTSD/.hosts.hknew"
   else
     hosts_sane "$HOSTS" || write_clean_hosts || _rp_ok=0
   fi
@@ -3306,7 +3314,7 @@ cmd_open() {
 
 cmd_help() {
   cat << EOF
-🛡️ HostKeeper $SB_VER — command line
+🛡️ HostKeeper $HK_VER — command line
 Usage: sh $SELF <command> [arguments]
 Every command except help prints one line of JSON and exits 0 on success, 1 on failure.
 
@@ -3398,7 +3406,7 @@ server_prepare() {
   rm -rf "$RUND/www"
   mkdir -p "$RUND/www/cgi-bin" || return 1
   cp -r "$MODDIR/webroot/." "$RUND/www/" || return 1
-  printf '#!/system/bin/sh\nexec /system/bin/sh "%s" cgi\n' "$MODDIR/sb.sh" > "$RUND/www/cgi-bin/api" || return 1
+  printf '#!/system/bin/sh\nexec /system/bin/sh "%s" cgi\n' "$MODDIR/hostkeeper.sh" > "$RUND/www/cgi-bin/api" || return 1
   chmod 0755 "$RUND/www/cgi-bin/api"
   {
     printf 'A:127.0.0.1\nD:*\n'
@@ -3433,7 +3441,7 @@ server_stop() {
 serve_main() {
   MODE=worker
   echo "$$" > "$RUND/watchdog.pid"
-  "$SB_BB" httpd -f -p "127.0.0.1:$PORT" -h "$RUND/www" -c "$RUND/httpd.conf" &
+  "$HK_BB" httpd -f -p "127.0.0.1:$PORT" -h "$RUND/www" -c "$RUND/httpd.conf" &
   _sv_h=$!
   echo "$_sv_h" > "$RUND/httpd.pid"
   touch_activity
@@ -3517,7 +3525,7 @@ action_main() {
   MODE=action
   ensure_dirs
   detect_manager
-  printf '\n🛡️ HostKeeper %s\n' "$SB_VER"
+  printf '\n🛡️ HostKeeper %s\n' "$HK_VER"
   printf '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'
   describe
   printf '%s\n\n' "${R_DESC#🛡️ }"
@@ -3719,7 +3727,7 @@ boot_main() {
   op_running && op_interrupt '⚠️ A task was interrupted by a reboot. Your hosts file is intact — run it again if needed.'
   rm -rf "$LOCKD" "$METALOCK" "$RUND/www" 2>/dev/null
   rm -f "$RUND"/spawn.* "$RUND/cancel" "$RUND/dl.pid" "$RUND/token" "$RUND/httpd.pid" "$RUND/watchdog.pid" "$RUND/last_request" "$RUND"/last_request.* "$RUND/httpd.conf" "$RUND/manager" "$RUND/device" "$SCHEDPID" "$SCHEDRETRY" "$PENDF" 2>/dev/null
-  rm -f "$METAD"/*.busy "$METAD"/*.tmp "$HOSTSD"/.hosts.sb* "$RULESD"/*.undo "$RULESD"/*.tmp 2>/dev/null
+  rm -f "$METAD"/*.busy "$METAD"/*.tmp "$HOSTSD"/.hosts.hk* "$RULESD"/*.undo "$RULESD"/*.tmp 2>/dev/null
   rm -rf "$TMPD" 2>/dev/null
   mkdir -p "$TMPD"
   migrate_data
@@ -3784,8 +3792,8 @@ install_main() {
   else
     printf '✅ Root manager: %s\n' "$MGR_NAME"
   fi
-  if [ "$SB_BB" != none ]; then
-    printf '✅ BusyBox: %s\n' "$SB_BB"
+  if [ "$HK_BB" != none ]; then
+    printf '✅ BusyBox: %s\n' "$HK_BB"
   else
     printf '⚠️ BusyBox not found — falling back to system tools\n'
   fi
@@ -3801,7 +3809,7 @@ install_main() {
   if ! httpd_available; then
     printf '%s\n' "⚠️ BusyBox httpd not found — the Action button can’t open the WebUI in a browser"
   fi
-  log INFO "Installing HostKeeper $SB_VER with $MGR_NAME $MGR_VER"
+  log INFO "Installing HostKeeper $HK_VER with $MGR_NAME $MGR_VER"
 
   printf '\n🧩 Looking for other hosts blockers…\n'
   _in_cf=0
@@ -3840,15 +3848,15 @@ install_main() {
   migrate_data keep
   rm -f "$BACKUPD/hosts.1" "$BACKUPD/hosts.2" "$BACKUPD/hosts.3" 2>/dev/null
   if [ -n "$_in_old" ]; then
-    printf '✅ Removed HostKeeper v5.0 leftovers:%s\n' "$_in_old"
+    printf '✅ Removed legacy HostKeeper files:%s\n' "$_in_old"
     log INFO "Removed legacy files:$_in_old"
   fi
   if [ "$_in_v1" = 1 ]; then
-    printf '✅ Moved your v1.0 data to the v2.0 layout\n'
+    printf '✅ Migrated your cached blocklist to the current layout\n'
   fi
   [ -z "$_in_old" ] && [ "$_in_v1" = 0 ] && printf '✅ Nothing to clean up\n'
   if [ "$_in_legacy" -gt 1 ] 2>/dev/null; then
-    printf 'ℹ️ Energized lists are no longer offered, so HostKeeper starts with StevenBlack Main\n'
+    printf 'ℹ️ Your previous list is no longer available, so HostKeeper starts with StevenBlack Main\n'
   fi
 
   printf '\n💾 Backing up the original hosts file…\n'
@@ -3866,9 +3874,9 @@ install_main() {
   _in_keep=0
   if [ -f "$CFG" ] && [ "$C_SETUP" = ready ] && sources_ready; then
     _in_name=$L_NAME
-    rm -f "$HOSTSD/.hosts.sbnew"
-    if compile_into "$HOSTSD/.hosts.sbnew" "$C_ENABLED"; then
-      if mv -f "$HOSTSD/.hosts.sbnew" "$HOSTS" && set_hosts_perm "$HOSTS" && verify_hosts "$CH_COUNT"; then
+    rm -f "$HOSTSD/.hosts.hknew"
+    if compile_into "$HOSTSD/.hosts.hknew" "$C_ENABLED"; then
+      if mv -f "$HOSTSD/.hosts.hknew" "$HOSTS" && set_hosts_perm "$HOSTS" && verify_hosts "$CH_COUNT"; then
         _in_keep=1
         [ "$C_ENABLED" = 1 ] && C_DOMAINS=$CH_COUNT
         cfg_save
@@ -3886,7 +3894,7 @@ install_main() {
         log INFO "Kept the existing setup: $_in_name"
       fi
     fi
-    rm -f "$HOSTSD/.hosts.sbnew" "$TMPD/compile.stats"
+    rm -f "$HOSTSD/.hosts.hknew" "$TMPD/compile.stats"
   fi
   if [ "$_in_keep" = 0 ]; then
     cfg_load
@@ -3919,9 +3927,9 @@ install_main() {
   set_description
 
   printf '\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'
-  printf '🎉 HostKeeper %s is installed!\n' "$SB_VER"
+  printf '🎉 HostKeeper %s is installed!\n' "$HK_VER"
   printf '🔁 Reboot your device to activate it.\n'
-  printf '⚡ New in v2.0: live apply, add-on lists, auto-update and more.\n'
+  printf '⚡ Features: live apply, add-on lists, auto-update and more.\n'
   case $MGR_NAME in
     KernelSU* | SukiSU* | APatch)
       printf '🔗 Works with or without a metamodule: HostKeeper checks the mount at every boot.\n'
@@ -3938,10 +3946,10 @@ install_main() {
 }
 
 [ -d "$TMPD" ] && [ -d "$LISTSD" ] || ensure_dirs
-SB_RC=0
+HK_RC=0
 
 case ${1:-} in
-  cgi) cgi_main; SB_RC=0 ;;
+  cgi) cgi_main; HK_RC=0 ;;
   _worker) worker_main "${2:-}" "${3:-}" "${4:-}" ;;
   _meta) shift; meta_worker_main "$@" ;;
   _setup) setup_main ;;
@@ -3954,4 +3962,4 @@ case ${1:-} in
   _uninstall) uninstall_main ;;
   *) dispatch "$@" ;;
 esac
-exit "$SB_RC"
+exit "$HK_RC"

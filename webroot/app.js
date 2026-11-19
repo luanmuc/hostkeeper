@@ -2,8 +2,8 @@
   'use strict';
 
   const MOD = '/data/adb/modules/hostkeeper';
-  const VERSION = 'v1.0.0';
-  const VERSION_CODE = 1;
+  const VERSION = 'v1.0.1';
+  const VERSION_CODE = 2;
   const RULE_MAX = 1000;
   const LEVEL = { green: '🟢', blue: '🔵', yellow: '🟡', orange: '🟠', red: '🔴' };
   const STEPS = [
@@ -91,7 +91,7 @@
     busy: false,
     syncBusy: false,
     opView: false,
-    seen: Number(store.get('sb-seq')) || 0,
+    seen: Number(store.get('hostkeeper-seq')) || 0,
     speed: { t: 0, b: 0, v: 0 },
     ready: false,
     gate: '',
@@ -202,14 +202,14 @@
       const m = /(?:^#|&)t=([0-9a-f]{32})(?:&|$)/.exec(window.location.hash || '');
       if (m) {
         token = m[1];
-        store.set('sb-token', token, true);
+        store.set('hostkeeper-token', token, true);
         try {
           window.history.replaceState(null, '', window.location.pathname + window.location.search);
         } catch (e) {
           token = m[1];
         }
       } else {
-        token = store.get('sb-token', true) || '';
+        token = store.get('hostkeeper-token', true) || '';
       }
     }
 
@@ -223,7 +223,7 @@
 
     function exec(command) {
       return new Promise((resolve, reject) => {
-        const cb = 'sbcb_' + Date.now().toString(36) + '_' + (seq++).toString(36);
+        const cb = 'hkcb_' + Date.now().toString(36) + '_' + (seq++).toString(36);
         const timer = setTimeout(() => {
           forget(cb);
           reject(new Error('timeout'));
@@ -274,7 +274,7 @@
       if (k) {
         let r;
         try {
-          r = await exec(['sh', quote(MOD + '/sb.sh'), quote(cmd)].concat(a.map(quote)).join(' '));
+          r = await exec(['sh', quote(MOD + '/hostkeeper.sh'), quote(cmd)].concat(a.map(quote)).join(' '));
         } catch (e) {
           return fail('bridge');
         }
@@ -632,7 +632,7 @@
     $('badge-emoji').textContent = s.e;
     $('badge-text').textContent = s.t;
     $('ver').textContent = st.version || VERSION;
-    $('credits-ver').textContent = 'HostKeeper ' + (st.version || VERSION) + ' • 🔒 Local only • No telemetry • Inter by Rasmus Andersson (SIL OFL 1.1)';
+    $('credits-ver').textContent = 'HostKeeper ' + (st.version || VERSION) + ' • 🔒 Local only • No telemetry • Inter (SIL OFL 1.1)';
 
     const alert = $('ribbon-alert');
     const nav = $('ribbon-nav');
@@ -1234,7 +1234,7 @@
   function markSeen(seq) {
     if (seq > S.seen) {
       S.seen = seq;
-      store.set('sb-seq', String(seq));
+      store.set('hostkeeper-seq', String(seq));
     }
   }
 
@@ -2268,7 +2268,7 @@
     btn.addEventListener('click', () => {
       const next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
       apply(next);
-      store.set('sb-theme', next);
+      store.set('hostkeeper-theme', next);
     });
   }
 
