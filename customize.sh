@@ -1,7 +1,7 @@
 #!/system/bin/sh
 
 HK_VER=$(sed -n 's/^version=//p' "$MODPATH/module.prop" 2>/dev/null | head -n 1)
-[ -n "$HK_VER" ] || HK_VER=v1.0.3
+[ -n "$HK_VER" ] || HK_VER=v1.0.5
 
 ui_print " "
 ui_print "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -30,7 +30,7 @@ if [ "$HK_RC" -ne 0 ]; then
   ui_print " "
   ui_print "❌ HostKeeper installation failed (exit $HK_RC)."
   ui_print "   The module was not activated. Check the installation log above."
-  exit "$HK_RC"
+  abort "HostKeeper installation failed (exit $HK_RC)."
 fi
 
 set_perm "$MODPATH/system/etc/hosts" 0 0 0644 u:object_r:system_file:s0

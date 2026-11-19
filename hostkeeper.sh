@@ -19,8 +19,8 @@ umask 022
 PATH=/system/bin:/system/xbin:/vendor/bin:${PATH:-/bin}
 export PATH
 
-HK_VER=v1.0.3
-HK_VCODE=4
+HK_VER=v1.0.5
+HK_VCODE=6
 SELF=$0
 case $SELF in /*) ;; *) SELF=$(pwd)/$SELF ;; esac
 MODDIR=${HK_MODDIR:-${SELF%/*}}
@@ -4069,7 +4069,7 @@ mount_main() {
 
 restore_original_for_uninstall() {
   [ -f "$ORIGHOSTS" ] || return 1
-  umount "$HOSTS" 2>/dev/null || umount "$MOUNT_TARGET" 2>/dev/null || true
+  umount "$MOUNT_TARGET" 2>/dev/null || true
   if cmp -s "$ORIGHOSTS" "$MOUNT_TARGET" 2>/dev/null; then
     return 0
   fi
@@ -4265,8 +4265,13 @@ install_main() {
   printf '🔁 Reboot your device to activate it.\n'
   printf '⚡ Features: live apply, add-on lists, auto-update and more.\n'
   case $MGR_NAME in
-    KernelSU* | SukiSU* | APatch)
-      printf '🔗 Works with or without a metamodule: HostKeeper checks the mount at every boot.\n'
+    KernelSU* | SukiSU*)
+      printf '🔗 If a metamodule (e.g. meta-overlayfs) is installed, the module system folder is mounted. Without one, HostKeeper tries a direct bind and reports the mount state in Diagnostics.\n'
+      printf '🖥️ After reboot, tap the WebUI button on the HostKeeper card.\n'
+      printf '▶️ The Action button opens the same WebUI in your browser.\n'
+      ;;
+    APatch)
+      printf '🔗 APatch applies the module through its OverlayFS; HostKeeper checks the mount at every boot.\n'
       printf '🖥️ After reboot, tap the WebUI button on the HostKeeper card.\n'
       printf '▶️ The Action button opens the same WebUI in your browser.\n'
       ;;

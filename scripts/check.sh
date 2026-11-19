@@ -38,6 +38,43 @@ else
   warn 'node is not installed; skipped JavaScript syntax checks'
 fi
 
+printf '\nWebUI control contract\n'
+if grep -qE '<button class="switch" id="act-toggle" type="button" role="switch" aria-checked="(true|false)"' webroot/index.html; then
+  ok 'hero blocker control is a role=switch button'
+else
+  bad 'hero blocker control is missing role=switch/aria-checked'
+fi
+TOGGLE_N=$(grep -c 'id="act-toggle"' webroot/index.html || true)
+[ "$TOGGLE_N" -eq 1 ] && ok 'exactly one act-toggle' || bad "index.html has $TOGGLE_N act-toggle elements"
+grep -q 'id="toggle-state"' webroot/index.html && ok 'toggle-state exists' || bad 'toggle-state is missing'
+if grep -RInE 'toggle-label|toggle-icon|tile-power' webroot >/dev/null 2>&1; then
+  bad 'dead/legacy toggle markup still referenced'
+else
+  ok 'no legacy toggle references'
+fi
+grep -q "tgl.setAttribute('aria-checked'" webroot/app.js && ok 'renderStatus owns switch state' || bad 'renderStatus does not set aria-checked'
+
+printf '\nManager adaptation contract\n'
+if grep -nE '^[[:space:]]*exit([[:space:]]|$)' customize.sh >/dev/null 2>&1; then
+  bad 'customize.sh must not call exit (it is sourced by the installer)'
+else
+  ok 'customize.sh has no direct exit'
+fi
+grep -qF 'abort "HostKeeper installation failed' customize.sh && ok 'customize.sh failure uses abort' || bad 'customize.sh failure path is missing abort'
+if grep -qF 'Works with or without a metamodule' hostkeeper.sh; then
+  bad 'hostkeeper.sh still claims metamodule-free KSU support'
+else
+  ok 'no unsupported metamodule-free KSU claim'
+fi
+grep -qF "'apatch'" webroot/app.js && ok 'WebUI bridge detects apatch bridge' || bad 'WebUI bridge is missing apatch detection'
+if grep -qF 'umount "$HOSTS"' hostkeeper.sh; then
+  bad 'uninstall still umounts the module-side hosts path'
+else
+  ok 'uninstall only umounts the live mount target'
+fi
+grep -qF 'metamodule' README.md && ok 'README documents KSU metamodule requirement' || bad 'README is missing the KSU metamodule requirement'
+grep -qF '不支持自定义 Recovery' README.md && ok 'README documents manager-only install' || bad 'README is missing the manager-only install warning'
+
 printf '\nmodule.prop\n'
 if [ ! -f module.prop ]; then
   bad 'module.prop is missing'

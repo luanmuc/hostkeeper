@@ -5,7 +5,7 @@
 ## 特点
 
 - **静态 hosts**：不开 VPN、不 hook；仅启用自动更新时运行轻量调度器，空闲功耗接近 0
-- **WebUI 管理**：状态、列表切换、增删自定义域名、日志、健康检查
+- **WebUI 管理**：状态、Protection 主开关、列表切换、增删自定义域名、日志、健康检查
 - **列表体系**：7 个主列表 + 14 个附加列表 + 最多 8 个自定义 HTTPS 列表
 - **域名规则**：Allow 支持 `*.example.com` 通配，Block 为精确域名
 - **安全机制**：备份、校验、回滚；设备支持时免重启生效
@@ -13,13 +13,21 @@
 
 ## 安装
 
-仓库根目录本身就是模块包（`module.prop` 位于根），打包成 zip 后刷入 KernelSU / Magisk / APatch，重启即可。维护、检查与打包见 `MAINTAINING.md`。
+仓库根目录本身就是模块包（`module.prop` 位于根），打包成 zip 后按管理器方式安装，重启即可。维护、检查与打包见 `MAINTAINING.md`。
+
+- **Magisk**：可在 Magisk App 内安装，也可用 TWRP 刷入；App 内安装时 Magisk 会使用自己的 `module_installer.sh`。
+- **KernelSU / SukiSU / APatch**：只在管理器内安装，不支持自定义 Recovery。
+- **KernelSU 系**：`system/` 目录需要 metamodule（如 meta-overlayfs）才会自动挂载；没有 metamodule 时 HostKeeper 会尝试直接 bind，是否生效以 Diagnostics 的 mount 状态为准。
 
 ## 使用
 
 1. 打开模块 WebUI（模块卡片的 WebUI / Action 按钮）
 2. **Lists** 选主列表，**Add-ons** 叠加附加列表，**Rules** 里加 Allow / Block
 3. 每次修改会重建 hosts 并校验，状态页可确认是否已生效
+
+## 检测与边界
+
+HostKeeper 不做反检测/隐藏。`hosts` 是全局文件，部分 App 可以读取文件或探测被拦截域名来判断广告拦截；root 管理器本身也可能被检测。需要隐藏 root/模块时请使用独立方案，本项目不承诺绕过。
 
 ## 注意
 

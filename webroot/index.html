@@ -11,8 +11,8 @@
 <title>HostKeeper</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preload" href="fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="style.css?v=1.0.3">
-<script src="theme.js?v=1.0.3"></script>
+<link rel="stylesheet" href="style.css?v=1.0.5">
+<script src="theme.js?v=1.0.5"></script>
 </head>
 <body>
 <div class="bg" aria-hidden="true"></div>
@@ -22,7 +22,7 @@
     <div class="brand">
       <div class="logo" aria-hidden="true">🛡️</div>
       <div class="brand-text">
-        <div class="brand-name">HostKeeper <span class="ver" id="ver">v1.0.3</span></div>
+        <div class="brand-name">HostKeeper <span class="ver" id="ver">v1.0.5</span></div>
         <div class="badge is-wait" id="badge"><span class="badge-emoji" id="badge-emoji">⏳</span><span id="badge-text">Loading…</span></div>
       </div>
     </div>
@@ -45,8 +45,14 @@
 <main class="wrap">
   <section class="hero glass" id="hero" aria-label="Protection overview">
     <div class="hero-head">
-      <span class="eyebrow">🛡️ Protection</span>
-      <span class="eyebrow-sub">The Zero-Bloat Digital Guardian</span>
+      <div class="hero-head-text">
+        <span class="eyebrow">🛡️ Protection</span>
+        <span class="eyebrow-sub">The Zero-Bloat Digital Guardian</span>
+      </div>
+      <div class="hero-power">
+        <span class="hero-power-state" id="toggle-state" aria-live="polite">Off</span>
+        <button class="switch" id="act-toggle" type="button" role="switch" aria-checked="false" aria-label="Enable blocking" title="Enable blocking"></button>
+      </div>
     </div>
     <div class="hero-num"><span id="hero-count"><span class="sk sk-num"></span></span></div>
     <div class="hero-sub" id="hero-sub"><span class="sk sk-line w-40"></span></div>
@@ -135,7 +141,6 @@
     <div class="tiles">
       <button class="tile" id="act-update" type="button"><span class="tile-emoji">🔄</span><span class="tile-label">Update Lists</span></button>
       <button class="tile" id="act-status" type="button"><span class="tile-emoji">📊</span><span class="tile-label">Check Status</span></button>
-      <button class="tile" id="act-toggle" type="button"><span class="tile-emoji tile-power" id="toggle-icon"></span><span class="tile-label" id="toggle-label">Disable Blocker</span></button>
       <button class="tile" id="act-diag" type="button"><span class="tile-emoji">🩺</span><span class="tile-label">Health Check</span></button>
       <button class="tile" id="act-settings" type="button"><span class="tile-emoji">⚙️</span><span class="tile-label">Settings</span></button>
       <button class="tile" id="act-repair" type="button"><span class="tile-emoji">🛠️</span><span class="tile-label">Repair</span></button>
@@ -170,7 +175,7 @@
       <button class="btn btn-ghost" type="button" data-link="hagezi">📋 HaGeZi</button>
       <button class="btn btn-ghost" type="button" data-link="inter">🔤 Inter</button>
     </div>
-    <p class="credits-ver" id="credits-ver">HostKeeper v1.0.3 • 🔒 Local only • No telemetry • Inter (SIL OFL 1.1)</p>
+    <p class="credits-ver" id="credits-ver">HostKeeper v1.0.5 • 🔒 Local only • No telemetry • Inter (SIL OFL 1.1)</p>
   </footer>
 </main>
 
@@ -201,6 +206,6 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="app.js?v=1.0.3"></script>
+<script src="app.js?v=1.0.5"></script>
 </body>
 </html>

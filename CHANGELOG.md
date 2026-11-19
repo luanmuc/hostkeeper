@@ -1,3 +1,23 @@
+## v1.0.5（2026-11-19）
+
+- 管理器适配（主机侧）：`customize.sh` 安装失败分支改用 `abort`，不再从 sourced 脚本直接 `exit`
+- 管理器适配（主机侧）：KernelSU/SukiSU 安装成功文案不再承诺“无 metamodule 也可用”；改为说明 metamodule 条件与 Diagnostics 的 mount 状态
+- 管理器适配（主机侧）：APatch 安装文案单独说明 OverlayFS；`restore_original_for_uninstall` 只 umount `/system/etc/hosts`，不再对模块内文件做无效 umount
+- WebUI：Bridge 兼容 `window.ksu` / `window.apatch`，并兼容返回 Promise 的 `exec()`；回调式管理器保持原路径
+- 文档：README 区分 Magisk App/TWRP 与 KernelSU/APatch 管理器安装，补 KSU metamodule 前置；新增“检测与边界”说明，不宣称反检测
+- 工程检查：`scripts/check.sh` 新增管理器适配契约（无 sourced `exit`、KSU/APatch 安装文案、README Recovery/metamodule、Bridge 对象、卸载 umount 目标）
+- 版本：v1.0.4 → v1.0.5，versionCode 5 → 6
+- 验证：主机侧 `check.sh`、shell/JS 语法、mock bridge 回归；真机管理器矩阵仍未执行
+
+## v1.0.4（2026-11-19）
+
+- WebUI：把 Actions 里的 `Disable/Enable Blocker` 按钮改为 Protection 区的 `role="switch"` 拨动开关，`aria-checked`、ON/OFF 状态、禁用态与确认弹窗同步
+- WebUI：移除 Actions 里重复的 `act-toggle` tile；修复首帧 `toggle-state` 显示 `On` 而 switch 初始为 off 的不一致
+- WebUI：提取 `renderPowerSwitch()`；清理 `tile-power`、`tile.is-danger`、`tile.is-on` 死样式
+- 工程检查：`scripts/check.sh` 新增 WebUI 控件契约检查（唯一 `act-toggle`、`role=switch`、`toggle-state`、无 legacy 引用、`renderStatus` 设置 `aria-checked`）
+- 版本：v1.0.3 → v1.0.4，versionCode 4 → 5
+- 验证：`check.sh` 全绿；`app.js` / `theme.js` 语法通过；Playwright 主机侧开关状态与确认弹窗通过；真机矩阵仍未执行
+
 ## v1.0.3（R3，2026-11-19）
 
 - 修复 15 个 P2：安装/卸载退出码与数据保留、禁用状态不被 setup 改回、gzip 尺寸校验、空 extras、stage 原子提交、服务/调度进程身份、spawn 超时、规则提交回滚、源增删并发/回滚、repair pending 重建、内容未变收口、安装器退出码

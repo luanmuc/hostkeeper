@@ -2,8 +2,8 @@
   'use strict';
 
   const MOD = '/data/adb/modules/hostkeeper';
-  const VERSION = 'v1.0.3';
-  const VERSION_CODE = 4;
+  const VERSION = 'v1.0.5';
+  const VERSION_CODE = 6;
   const RULE_MAX = 1000;
   const LEVEL = { green: '🟢', blue: '🔵', yellow: '🟡', orange: '🟠', red: '🔴' };
   const STEPS = [
@@ -189,7 +189,9 @@
   }
 
   const Bridge = (() => {
-    const k = (typeof window.ksu === 'object' && window.ksu && typeof window.ksu.exec === 'function') ? window.ksu : null;
+    const k = ['ksu', 'apatch']
+      .map((name) => window[name])
+      .find((obj) => obj && typeof obj.exec === 'function') || null;
     let token = '';
     let seq = 0;
     let framed = false;
@@ -228,13 +230,24 @@
           forget(cb);
           reject(new Error('timeout'));
         }, 120000);
-        window[cb] = (errno, stdout, stderr) => {
+        function done(errno, stdout, stderr) {
           clearTimeout(timer);
           forget(cb);
           resolve({ errno: Number(errno) || 0, stdout: stdout === null || stdout === undefined ? '' : String(stdout), stderr: stderr === null || stderr === undefined ? '' : String(stderr) });
-        };
+        }
+        window[cb] = done;
         try {
-          k.exec(command, JSON.stringify({}), cb);
+          const ret = k.exec(command, JSON.stringify({}), cb);
+          if (ret && typeof ret.then === 'function') {
+            ret.then((r) => {
+              if (r && typeof r === 'object') done(r.errno, r.stdout, r.stderr);
+              else done(0, r, '');
+            }, (e) => {
+              clearTimeout(timer);
+              forget(cb);
+              reject(e);
+            });
+          }
         } catch (e) {
           clearTimeout(timer);
           forget(cb);
@@ -623,6 +636,17 @@
     return null;
   }
 
+  function renderPowerSwitch(st) {
+    const on = !!st.enabled;
+    const tgl = $('act-toggle');
+    tgl.setAttribute('aria-checked', on ? 'true' : 'false');
+    tgl.setAttribute('aria-label', on ? 'Disable blocking' : 'Enable blocking');
+    tgl.title = on ? 'Disable blocking' : 'Enable blocking';
+    const ts = $('toggle-state');
+    ts.textContent = on ? 'On' : 'Off';
+    ts.classList.toggle('is-on', on);
+  }
+
   function renderStatus() {
     const st = S.status;
     if (!st) return;
@@ -696,17 +720,14 @@
     tags.appendChild(h('span', { class: 'fact', text: '🔄 Auto-update: ' + (AUTO_TEXT[st.autoupdate] || 'Off') }));
     if (st.guard) tags.appendChild(h('span', { class: 'fact', text: '🔏 Private DNS protected' }));
 
-    const tgl = $('act-toggle');
-    tgl.classList.toggle('is-danger', !!st.enabled);
-    tgl.classList.toggle('is-on', !st.enabled);
-    $('toggle-label').textContent = st.enabled ? 'Disable Blocker' : 'Enable Blocker';
+    renderPowerSwitch(st);
     let actNote = '🔄 Updates only download when a source list has changed.';
     if (!st.enabled) actNote = '🔴 The blocker is off. Enable it to switch or update lists.';
     else if (isStale(st)) actNote = '🕒 Your lists are ' + staleDaysOf(st) + ' days old. Tap Update Lists, or turn on auto-update in Settings.';
     $('actions-note').textContent = actNote;
     $('lists-note').textContent = st.enabled
       ? 'Pick a blocklist. Stronger lists block more, but can break more.'
-      : '🔴 The blocker is off. Enable it in ⚡ Actions to switch or update lists.';
+      : '🔴 The blocker is off. Enable it with the switch in 🛡️ Protection to switch or update lists.';
     applyBusy();
   }
 
@@ -2393,7 +2414,6 @@
     setupLite();
     setupTheme();
     setupGuards();
-    $('toggle-icon').innerHTML = POWER;
     bindEvents();
     start();
   }

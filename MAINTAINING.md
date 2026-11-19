@@ -9,7 +9,7 @@
 | `module.prop` | `version=` / `versionCode=` | **唯一来源**，设备端以此为准 |
 | `hostkeeper.sh` | `HK_VER=` / `HK_VCODE=`（第 22-23 行） | 仅当 module.prop 缺失时生效，运行时会被文件值覆盖 |
 | `webroot/app.js` | `VERSION` / `VERSION_CODE`（第 5-6 行） | 状态接口失败时的兜底值 |
-| `webroot/index.html` | `#ver` 品牌兜底、`#credits-ver` 页脚、3 处 `?v=` 缓存参数（第 14-15、25、173、204 行） | 页面加载后会被接口值覆盖 |
+| `webroot/index.html` | `#ver` 品牌兜底、`#credits-ver` 页脚、3 处 `?v=` 缓存参数（第 14-15、25、178、209 行） | 页面加载后会被接口值覆盖 |
 | `customize.sh` | `HK_VER` 兜底（第 4 行） | module.prop 读不到时的安装横幅兜底 |
 
 发布时上表所有值必须一致；`version=`、`HK_VER`、`VERSION` 与页面显示文本都保留 `v` 前缀。
@@ -74,7 +74,7 @@ OUT_DIR=/path/to/out sh scripts/package.sh
 sh scripts/check.sh
 ```
 
-`check.sh` 覆盖：全部 shell 语法、`app.js` / `theme.js` 语法、`module.prop` 字段、各处版本兜底值、模块必需文件、入口脚本执行位、旧内部命名与凭证扫描。v1.0.3 另跑 `notes/stress/evidence/v1.0.2/p2p3-regression.sh`（36 用例，主机侧 36/36 PASS）。需要单独看某一项时：
+`check.sh` 覆盖：全部 shell 语法、`app.js` / `theme.js` 语法、WebUI 控件契约、`module.prop` 字段、各处版本兜底值、模块必需文件、入口脚本执行位、旧内部命名与凭证扫描。v1.0.3 的 host-side 回归为 36/36 PASS；v1.0.4 另跑开关状态/确认弹窗与首帧一致性检查。需要单独看某一项时：
 
 ```bash
 sh -n hostkeeper.sh
@@ -84,6 +84,13 @@ grep -n 'HK_VER=' hostkeeper.sh customize.sh
 grep -n "VERSION = " webroot/app.js
 grep -nE '?v=|id="ver"' webroot/index.html
 ```
+
+### WebUI 主开关契约
+
+- `webroot/index.html` 只能有一个 `id="act-toggle"`，必须是 `role="switch"` + `aria-checked`，并绑定 `toggle-state`。
+- `webroot/app.js` 的 `renderPowerSwitch()` 负责 `aria-checked`、`aria-label`、`title` 与 ON/OFF 文本；`applyBusy()` 负责禁用态。
+- 不要再加回 Actions 的 `act-toggle` tile，也不要用 `toggle-label` / `toggle-icon` 旧命名。
+- 开关只在 User 可操作时启用；首次 setup 未完成时仍显示当前配置状态，但页面用 `hero-sub` 明确“等待首次下载”。
 
 ## 8. 安全边界
 
@@ -96,3 +103,12 @@ grep -nE '?v=|id="ver"' webroot/index.html
 - inplace 写入 hosts 时使用同目录临时文件 + `cmp` + `mv -f`，失败保留旧文件
 - 源元数据 `src_write` 使用 `.tmp` + `mv` 原子写；`stage_commit` 提交失败整体回滚
 - 卸载只有在原始 hosts 恢复成功后才删除 `/data/adb/hostkeeper`
+
+## 9. 管理器适配与检测边界
+
+- **Magisk**：App 内安装时 `update-binary` 会被官方 `module_installer.sh` 替换；`customize.sh` 是被 sourced 的，失败只能 `abort`，不能 `exit`。
+- **KernelSU / SukiSU / KernelSU Next**：`system/` 目录只有 metamodule 才自动挂载；没有 metamodule 时只承诺“尝试直接 bind”，实际以 Diagnostics 的 mount 状态为准，不对外承诺必然生效。
+- **APatch**：按本地 APatch 指南使用 OverlayFS；安装/启动/卸载脚本与 KernelSU 结构一致，但 WebUI 桥接需要真机验证。
+- **WebUI Bridge**：优先识别 `window.ksu`，其次 `window.apatch`；兼容回调式 `exec(command, opts, cb)` 和返回 Promise 的 `exec()`。
+- **检测边界**：本项目不做反检测/隐藏。`hosts` 是全局文件，App 可读取文件或探测被拦截域名；root 管理器本身也可能被检测。不要在本项目里承诺绕过银行、游戏或 Play Integrity 检测。
+- **主机侧验证**：`sh scripts/check.sh` 覆盖 sourced `exit`、KSU/APatch 安装文案、README Recovery/metamodule、Bridge 对象和卸载 umount 目标；真机矩阵见 `notes/plans/STRESS-TEST-PLAN.md` 6D。

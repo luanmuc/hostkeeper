@@ -468,11 +468,38 @@ p {
 
 .hero-head {
   position: relative;
-  height: 22px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.hero-head-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+
+.hero-power {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hero-power-state {
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.hero-power-state.is-on {
+  color: var(--accent);
 }
 
 .eyebrow {
@@ -1202,25 +1229,6 @@ p {
   align-items: center;
   font-size: 24px;
   line-height: 28px;
-}
-
-.tile-power {
-  width: 26px;
-  height: 26px;
-  margin: 1px 0;
-}
-
-.tile-power svg {
-  width: 26px;
-  height: 26px;
-}
-
-.tile.is-danger .tile-power {
-  color: var(--danger);
-}
-
-.tile.is-on .tile-power {
-  color: var(--accent);
 }
 
 .tile-label {
