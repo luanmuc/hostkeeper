@@ -14,6 +14,14 @@
 
 发布时上表所有值必须一致；`version=`、`HK_VER`、`VERSION` 与页面显示文本都保留 `v` 前缀。
 
+## 1.1 用户可见文案语言
+
+- WebUI 与安装/操作提示统一使用简体中文；`lang="zh-CN"`。
+- 内部命令名、JSON 字段、CSS class、状态枚举（`applied` / `pending` / `overridden` / `inactive`）保持英文，不参与翻译。
+- 专有列表名与品牌名保留原文：StevenBlack、hBlock、HaGeZi、Xiaomi、Samsung、Huawei、OPPO、Vivo、Amazon、TikTok、Microsoft、Inter。
+- 日志级别键保留 `INFO` / `WARN` / `ERROR`，正文中文；技术路径、HTTP 状态码、进程名保留原文。
+- `scripts/check.sh` 包含中文 UI 契约；修改文案后必须同时跑 `check.sh` 与 UI 回归，防止回退成英文。
+
 ## 2. 列表与规则从哪里来
 
 - 两个源前缀在 `hostkeeper.sh` 第 92-93 行：

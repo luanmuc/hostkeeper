@@ -1,12 +1,12 @@
 #!/system/bin/sh
 
 HK_VER=$(sed -n 's/^version=//p' "$MODPATH/module.prop" 2>/dev/null | head -n 1)
-[ -n "$HK_VER" ] || HK_VER=v1.0.5
+[ -n "$HK_VER" ] || HK_VER=v1.0.6
 
 ui_print " "
 ui_print "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 ui_print "  🛡️ HostKeeper $HK_VER"
-ui_print "  The Zero-Bloat Digital Guardian"
+ui_print "  轻量无负担的数字守护者"
 ui_print "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 ui_print " "
 
@@ -28,9 +28,9 @@ if [ -f "$HK_INSTALL_LOG" ]; then
 fi
 if [ "$HK_RC" -ne 0 ]; then
   ui_print " "
-  ui_print "❌ HostKeeper installation failed (exit $HK_RC)."
-  ui_print "   The module was not activated. Check the installation log above."
-  abort "HostKeeper installation failed (exit $HK_RC)."
+  ui_print "❌ HostKeeper 安装失败（退出码 $HK_RC）。"
+  ui_print "   模块未激活，请检查上方安装日志。"
+  abort "HostKeeper 安装失败（退出码 $HK_RC）。"
 fi
 
 set_perm "$MODPATH/system/etc/hosts" 0 0 0644 u:object_r:system_file:s0

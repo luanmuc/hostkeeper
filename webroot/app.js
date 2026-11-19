@@ -2,62 +2,62 @@
   'use strict';
 
   const MOD = '/data/adb/modules/hostkeeper';
-  const VERSION = 'v1.0.5';
-  const VERSION_CODE = 6;
+  const VERSION = 'v1.0.6';
+  const VERSION_CODE = 7;
   const RULE_MAX = 1000;
   const LEVEL = { green: '🟢', blue: '🔵', yellow: '🟡', orange: '🟠', red: '🔴' };
   const STEPS = [
-    ['download', '⬇️', 'Download'],
-    ['verify', '🔍', 'Verify'],
-    ['optimize', '🧹', 'Optimize'],
-    ['install', '📦', 'Install']
+    ['download', '⬇️', '下载'],
+    ['verify', '🔍', '校验'],
+    ['optimize', '🧹', '优化'],
+    ['install', '📦', '安装']
   ];
   const PHASE_TEXT = {
-    prepare: '⏳ Preparing…',
-    check: '🔎 Checking for updates…',
-    download: '⬇️ Downloading…',
-    verify: '🔍 Verifying the download…',
-    optimize: '🧹 Cleaning and optimizing…',
-    install: '📦 Installing the hosts file…',
-    finish: '✨ Finishing up…'
+    prepare: '⏳ 准备中…',
+    check: '🔎 正在检查更新…',
+    download: '⬇️ 下载中…',
+    verify: '🔍 正在校验下载内容…',
+    optimize: '🧹 正在清理和优化…',
+    install: '📦 正在安装 hosts 文件…',
+    finish: '✨ 正在收尾…'
   };
   const ADDON_GROUPS = [
-    ['content', '🎭 Content categories'],
-    ['security', '🔐 Security'],
-    ['tracker', '📱 Device & app trackers'],
-    ['custom', '🔗 Your own lists']
+    ['content', '🎭 内容分类'],
+    ['security', '🔐 安全'],
+    ['tracker', '📱 设备与应用追踪'],
+    ['custom', '🔗 自定义列表']
   ];
   const ADDON_WARN = {
-    dns: '🔐 Encrypted DNS bypass blocks public DNS-over-HTTPS servers, so browsers and apps fall back to the system resolver. Your Android Private DNS provider stays reachable automatically.',
-    heavy: '🐘 Threat Intelligence is very large. On some ROMs a hosts file with over a million entries makes DNS lookups slower.',
-    breaks: '👥 Social networks blocks the networks themselves. Their apps and websites stop working.'
+    dns: '🔐 加密 DNS 绕过会拦截公共 DNS-over-HTTPS 服务器，让浏览器和应用回退到系统解析器。你的 Android 私人 DNS 提供商仍会自动保持可用。',
+    heavy: '🐘 威胁情报列表非常大。在某些 ROM 上，超过一百万条的 hosts 文件会让 DNS 查询变慢。',
+    breaks: '👥 社交网络列表会拦截社交平台本身，相关应用和网站将无法使用。'
   };
-  const AUTO_CHOICES = [[0, 'Off'], [1, 'Daily'], [3, '3 days'], [7, 'Weekly']];
-  const AUTO_TEXT = { 0: 'Off', 1: 'Daily', 3: 'Every 3 days', 7: 'Weekly' };
+  const AUTO_CHOICES = [[0, '关闭'], [1, '每天'], [3, '每 3 天'], [7, '每周']];
+  const AUTO_TEXT = { 0: '关闭', 1: '每天', 3: '每 3 天', 7: '每周' };
   const POWER = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 3.2v8.4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M6.5 6.8a7.7 7.7 0 1 0 11 0" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
   const FAIL = {
-    bridge: '❌ HostKeeper didn’t respond. Please try again.',
-    offline: '🔌 The local WebUI server isn’t running anymore.',
-    unauthorized: '🔑 This session has expired.',
-    no_token: '🔑 No secure session was found.',
-    framed: '🚫 HostKeeper can’t run inside another page.'
+    bridge: '❌ HostKeeper 没有响应，请重试。',
+    offline: '🔌 本地 WebUI 服务已停止运行。',
+    unauthorized: '🔑 当前会话已过期。',
+    no_token: '🔑 未找到安全会话。',
+    framed: '🚫 HostKeeper 不能在另一个页面中运行。'
   };
   const ERR = {
-    empty: '✏️ Enter a domain first.',
-    space: '🚫 Spaces aren’t allowed in a domain.',
-    wildcard: '🚫 A wildcard only works at the start of an allow rule, like *.example.com.',
-    wildblock: '🚫 Hosts files can’t block wildcards. Enter the exact domain to block.',
-    port: '🚫 Ports and IPv6 addresses aren’t allowed. Enter just the domain, like example.com.',
-    ip: '🚫 IP addresses aren’t allowed. Enter a domain name instead.',
-    invalid: '🚫 That doesn’t look like a valid domain. Example: ads.example.com'
+    empty: '✏️ 请先输入域名。',
+    space: '🚫 域名中不能包含空格。',
+    wildcard: '🚫 通配符只能用在放行规则开头，例如 *.example.com。',
+    wildblock: '🚫 Hosts 文件不能拦截通配符，请输入要拦截的精确域名。',
+    port: '🚫 不允许端口和 IPv6 地址，请只输入域名，例如 example.com。',
+    ip: '🚫 不允许 IP 地址，请输入域名。',
+    invalid: '🚫 这看起来不是有效域名，例如 ads.example.com。'
   };
 
   const $ = (id) => document.getElementById(id);
-  const nf = new Intl.NumberFormat('en-US');
-  const dateFmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  const timeFmt = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-  const dayFmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
-  const stampFmt = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+  const nf = new Intl.NumberFormat('zh-CN');
+  const dateFmt = new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric', year: 'numeric' });
+  const timeFmt = new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  const dayFmt = new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric' });
+  const stampFmt = new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
 
   const store = {
     get(key, session) {
@@ -110,7 +110,7 @@
   }
 
   function fmtDate(sec) {
-    return sec ? dateFmt.format(new Date(sec * 1000)) : 'Unknown';
+    return sec ? dateFmt.format(new Date(sec * 1000)) : '未知';
   }
 
   function plural(n, one, many) {
@@ -122,13 +122,13 @@
   }
 
   function ago(sec) {
-    if (!sec) return 'Never';
+    if (!sec) return '从未';
     const d = Math.max(0, nowSec() - sec);
-    if (d < 60) return 'just now';
-    if (d < 3600) return Math.floor(d / 60) + ' min ago';
-    if (d < 86400) return Math.floor(d / 3600) + ' h ago';
+    if (d < 60) return '刚刚';
+    if (d < 3600) return Math.floor(d / 60) + ' 分钟前';
+    if (d < 86400) return Math.floor(d / 3600) + ' 小时前';
     const days = Math.floor(d / 86400);
-    return days === 1 ? 'yesterday' : days + ' days ago';
+    return days === 1 ? '昨天' : days + ' 天前';
   }
 
   function logTime(sec) {
@@ -459,7 +459,7 @@
   })();
 
   function gotIt() {
-    return [{ label: '👌 Got it', class: 'btn-primary', onClick: () => Modal.close() }];
+    return [{ label: '👌 知道了', class: 'btn-primary', onClick: () => Modal.close() }];
   }
 
   function confirmBox(o) {
@@ -478,7 +478,7 @@
         view: 'confirm',
         onDismiss: () => finish(false),
         actions: [
-          { label: '↩️ Not now', class: 'btn-ghost', onClick: () => { Modal.close(); finish(false); } },
+          { label: '↩️ 暂不', class: 'btn-ghost', onClick: () => { Modal.close(); finish(false); } },
           { label: o.ok, class: o.okClass || 'btn-primary', power: o.power, onClick: () => finish(true) }
         ]
       });
@@ -489,11 +489,11 @@
     if (S.gate === code) return;
     S.gate = code;
     const map = {
-      no_token: ['🔑', 'Secure session required', 'Open HostKeeper from your root manager: tap the Action ▶️ button on the HostKeeper module card. It starts the local WebUI with a one-time secure link.'],
-      unauthorized: ['🔑', 'Session expired', 'This WebUI session is no longer valid. Tap the Action ▶️ button on HostKeeper in your root manager to open a fresh one.'],
-      offline: ['🔌', 'WebUI server stopped', 'The local server stops by itself after 10 minutes without activity. Tap the Action ▶️ button on HostKeeper in your root manager to start it again.'],
-      framed: ['🚫', 'Blocked for your safety', 'HostKeeper never runs inside another page. Open it from the Action ▶️ button on the HostKeeper module card.'],
-      bridge: ['❌', 'Couldn’t reach HostKeeper', 'The module didn’t answer. Make sure HostKeeper is installed and enabled — if you just installed it, reboot first.']
+      no_token: ['🔑', '需要安全会话', '请从 root 管理器打开 HostKeeper：点击 HostKeeper 模块卡片上的 Action ▶️ 按钮。它会用一次性安全链接启动本地 WebUI。'],
+      unauthorized: ['🔑', '会话已过期', '此 WebUI 会话已失效。请点击 root 管理器中 HostKeeper 的 Action ▶️ 按钮重新打开。'],
+      offline: ['🔌', 'WebUI 服务已停止', '本地服务在 10 分钟无活动后会自动停止。请点击 root 管理器中 HostKeeper 的 Action ▶️ 按钮重新启动。'],
+      framed: ['🚫', '出于安全原因已阻止', 'HostKeeper 不会在另一个页面中运行。请从 HostKeeper 模块卡片的 Action ▶️ 按钮打开。'],
+      bridge: ['❌', '无法连接 HostKeeper', '模块没有响应。请确认 HostKeeper 已安装并启用；如果刚安装，请先重启。']
     };
     const m = map[code] || map.bridge;
     $('gate-icon').textContent = m[0];
@@ -566,19 +566,19 @@
       body: [ta, hint],
       view: 'text',
       actions: [
-        { label: '👌 Done', class: 'btn-ghost', onClick: () => Modal.close() },
+        { label: '👌 完成', class: 'btn-ghost', onClick: () => Modal.close() },
         {
-          label: '📋 Copy',
+          label: '📋 复制',
           class: 'btn-primary',
           onClick: async () => {
             const ok = await copyText(o.text);
             if (ok) {
-              hint.textContent = '✅ Copied to the clipboard.';
+              hint.textContent = '✅ 已复制到剪贴板。';
               hint.className = 'fine is-ok';
             } else {
               ta.focus();
               ta.select();
-              hint.textContent = '✏️ Copying isn’t available here. The text is selected — copy it by hand.';
+              hint.textContent = '✏️ 此处无法直接复制，文本已选中，请手动复制。';
               hint.className = 'fine';
             }
           }
@@ -588,22 +588,22 @@
   }
 
   function stateOf(st) {
-    if (!st) return { cls: 'is-wait', e: '⏳', t: 'Loading…' };
-    if (st.setup === 'pending') return { cls: 'is-wait', e: '⏳', t: 'Setup pending' };
-    if (st.setup === 'failed') return { cls: 'is-off', e: '❌', t: 'Setup failed' };
-    if (st.reboot) return { cls: 'is-warn', e: '🟡', t: 'Reboot required' };
-    if (!st.enabled) return { cls: 'is-off', e: '🔴', t: 'Disabled' };
-    if (st.applied === 'overridden') return { cls: 'is-warn', e: '⚠️', t: 'Overridden' };
-    if (st.applied === 'inactive') return { cls: 'is-off', e: '🔴', t: 'Not active' };
-    return { cls: 'is-on', e: '🟢', t: 'Active' };
+    if (!st) return { cls: 'is-wait', e: '⏳', t: '加载中…' };
+    if (st.setup === 'pending') return { cls: 'is-wait', e: '⏳', t: '等待初始化' };
+    if (st.setup === 'failed') return { cls: 'is-off', e: '❌', t: '初始化失败' };
+    if (st.reboot) return { cls: 'is-warn', e: '🟡', t: '需要重启' };
+    if (!st.enabled) return { cls: 'is-off', e: '🔴', t: '已停用' };
+    if (st.applied === 'overridden') return { cls: 'is-warn', e: '⚠️', t: '被覆盖' };
+    if (st.applied === 'inactive') return { cls: 'is-off', e: '🔴', t: '未生效' };
+    return { cls: 'is-on', e: '🟢', t: '已启用' };
   }
 
   function appliedText(a) {
-    if (a === 'applied') return ['✅ Applied', 'is-ok'];
-    if (a === 'pending') return ['🟡 Not applied yet — reboot required', 'is-warn'];
-    if (a === 'overridden') return ['⚠️ Overridden by another module', 'is-warn'];
-    if (a === 'inactive') return ['🔴 Not active — reboot to activate', 'is-err'];
-    return ['ℹ️ The system hosts file couldn’t be checked', ''];
+    if (a === 'applied') return ['✅ 已生效', 'is-ok'];
+    if (a === 'pending') return ['🟡 尚未生效，需要重启', 'is-warn'];
+    if (a === 'overridden') return ['⚠️ 被其他模块覆盖', 'is-warn'];
+    if (a === 'inactive') return ['🔴 未生效，重启后激活', 'is-err'];
+    return ['ℹ️ 无法检查系统 hosts 文件', ''];
   }
 
   function staleDaysOf(st) {
@@ -640,10 +640,10 @@
     const on = !!st.enabled;
     const tgl = $('act-toggle');
     tgl.setAttribute('aria-checked', on ? 'true' : 'false');
-    tgl.setAttribute('aria-label', on ? 'Disable blocking' : 'Enable blocking');
-    tgl.title = on ? 'Disable blocking' : 'Enable blocking';
+    tgl.setAttribute('aria-label', on ? '关闭拦截' : '开启拦截');
+    tgl.title = on ? '关闭拦截' : '开启拦截';
     const ts = $('toggle-state');
-    ts.textContent = on ? 'On' : 'Off';
+    ts.textContent = on ? '开启' : '关闭';
     ts.classList.toggle('is-on', on);
   }
 
@@ -656,7 +656,7 @@
     $('badge-emoji').textContent = s.e;
     $('badge-text').textContent = s.t;
     $('ver').textContent = st.version || VERSION;
-    $('credits-ver').textContent = 'HostKeeper ' + (st.version || VERSION) + ' • 🔒 Local only • No telemetry • Inter (SIL OFL 1.1)';
+    $('credits-ver').textContent = 'HostKeeper ' + (st.version || VERSION) + ' • 🔒 仅本地运行 • 无遥测 • Inter (SIL OFL 1.1)';
 
     const alert = $('ribbon-alert');
     const nav = $('ribbon-nav');
@@ -666,14 +666,14 @@
     else if (st.applied === 'inactive' && st.enabled && st.setup === 'ready') mode = 'inactive';
     if (mode) {
       const texts = {
-        reboot: ['🟡 Reboot to apply changes', '🟡 Reboot required'],
-        inactive: ['🔴 Reboot to activate', '🔴 Not active'],
-        setup: st.setup === 'failed' ? ['❌ First download failed', '❌ Download failed'] : ['⏳ First list not downloaded', '⏳ Setup pending']
+        reboot: ['🟡 重启后生效', '🟡 需要重启'],
+        inactive: ['🔴 重启后激活', '🔴 未生效'],
+        setup: st.setup === 'failed' ? ['❌ 首次下载失败', '❌ 下载失败'] : ['⏳ 首个列表尚未下载', '⏳ 等待初始化']
       };
       alert.classList.toggle('is-info', mode === 'setup');
       $('ribbon-long').textContent = texts[mode][0];
       $('ribbon-short').textContent = texts[mode][1];
-      $('ribbon-btn').textContent = mode === 'setup' ? '⬇️ Download now' : '🔁 Reboot now';
+      $('ribbon-btn').textContent = mode === 'setup' ? '⬇️ 立即下载' : '🔁 立即重启';
       $('ribbon-btn').className = 'btn btn-xs ' + (mode === 'setup' ? 'btn-primary' : 'btn-warn');
       $('ribbon-btn').setAttribute('data-mode', mode);
       $('ribbon-btn').disabled = S.busy && mode === 'setup';
@@ -689,26 +689,26 @@
     const sub = $('hero-sub');
     if (st.setup !== 'ready') {
       count.appendChild(h('span', { class: 'num is-muted', text: '—' }));
-      sub.textContent = st.setup === 'failed' ? 'The first download failed — tap Download now to retry' : 'Waiting for the first download';
+      sub.textContent = st.setup === 'failed' ? '首次下载失败，点击“立即下载”重试' : '正在等待首次下载';
     } else if (!st.enabled) {
-      count.appendChild(h('span', { class: 'num is-muted', text: 'Paused' }));
-      sub.textContent = st.reboot ? 'Blocking turns off after the reboot' : 'Blocking is turned off';
+      count.appendChild(h('span', { class: 'num is-muted', text: '已暂停' }));
+      sub.textContent = st.reboot ? '重启后将停止拦截' : '拦截已关闭';
     } else {
       count.appendChild(h('span', { class: 'num', text: fmtNum(st.domains) }));
-      if (st.reboot) sub.textContent = 'domains ready — reboot to apply';
-      else if (st.applied === 'overridden') sub.textContent = 'domains ready, but overridden';
-      else if (st.applied === 'inactive') sub.textContent = 'domains ready — reboot to activate';
-      else sub.textContent = 'domains blocked system-wide';
+      if (st.reboot) sub.textContent = '域名已就绪，重启后生效';
+      else if (st.applied === 'overridden') sub.textContent = '域名已就绪，但被其他模块覆盖';
+      else if (st.applied === 'inactive') sub.textContent = '域名已就绪，重启后激活';
+      else sub.textContent = '已全系统拦截域名';
     }
 
     const addons = st.addons || [];
     const hl = clear($('hero-list'));
     hl.appendChild(h('span', { class: 'hl-name', text: '📋 ' + (st.listName || 'StevenBlack Main') }));
     hl.appendChild(h('span', { class: 'lvl lvl-' + (st.level || 'green'), text: (LEVEL[st.level] || '🟢') + ' ' + (st.levelText || '') }));
-    if (addons.length) hl.appendChild(h('span', { class: 'hl-more', text: '➕ ' + addons.length + ' ' + plural(addons.length, 'add-on', 'add-ons') }));
+    if (addons.length) hl.appendChild(h('span', { class: 'hl-more', text: '➕ ' + addons.length + ' ' + plural(addons.length, '个附加列表', '个附加列表') }));
     $('stat-rules').textContent = '✅ ' + fmtNum(st.allow) + '  ·  ⛔ ' + fmtNum(st.block);
     const upd = $('stat-updated');
-    upd.textContent = st.setup === 'ready' ? ago(st.updated) : 'Not yet';
+    upd.textContent = st.setup === 'ready' ? ago(st.updated) : '尚未更新';
     upd.classList.toggle('is-stale', isStale(st));
     const ap = appliedText(st.applied);
     const apEl = $('hero-applied');
@@ -716,18 +716,18 @@
     apEl.className = 'hero-applied ' + ap[1];
 
     const tags = clear($('hero-tags'));
-    tags.appendChild(h('span', { class: 'fact', text: st.live ? '⚡ Live apply' : '🔁 Applies on reboot' }));
-    tags.appendChild(h('span', { class: 'fact', text: '🔄 Auto-update: ' + (AUTO_TEXT[st.autoupdate] || 'Off') }));
-    if (st.guard) tags.appendChild(h('span', { class: 'fact', text: '🔏 Private DNS protected' }));
+    tags.appendChild(h('span', { class: 'fact', text: st.live ? '⚡ 即时生效' : '🔁 重启后生效' }));
+    tags.appendChild(h('span', { class: 'fact', text: '🔄 自动更新：' + (AUTO_TEXT[st.autoupdate] || '关闭') }));
+    if (st.guard) tags.appendChild(h('span', { class: 'fact', text: '🔏 私人 DNS 已保护' }));
 
     renderPowerSwitch(st);
-    let actNote = '🔄 Updates only download when a source list has changed.';
-    if (!st.enabled) actNote = '🔴 The blocker is off. Enable it to switch or update lists.';
-    else if (isStale(st)) actNote = '🕒 Your lists are ' + staleDaysOf(st) + ' days old. Tap Update Lists, or turn on auto-update in Settings.';
+    let actNote = '🔄 仅当源列表发生变化时才会下载更新。';
+    if (!st.enabled) actNote = '🔴 拦截已关闭。开启后才能切换或更新列表。';
+    else if (isStale(st)) actNote = '🕒 你的列表已经 ' + staleDaysOf(st) + ' 天未更新。请点击“更新列表”，或在设置中开启自动更新。';
     $('actions-note').textContent = actNote;
     $('lists-note').textContent = st.enabled
-      ? 'Pick a blocklist. Stronger lists block more, but can break more.'
-      : '🔴 The blocker is off. Enable it with the switch in 🛡️ Protection to switch or update lists.';
+      ? '选择一份拦截列表。越严格的列表拦截越多，也越可能影响正常使用。'
+      : '🔴 拦截已关闭。请先在 🛡️ 防护 中打开开关，再切换或更新列表。';
     applyBusy();
   }
 
@@ -741,9 +741,9 @@
     c.desc = h('p', { class: 'lc-desc' });
     c.count = h('span');
     c.date = h('span');
-    c.retry = h('button', { class: 'btn btn-ghost btn-xs invisible', type: 'button', text: '🔁 Retry' });
-    c.use = h('button', { class: 'btn btn-primary btn-xs', type: 'button', text: '⬇️ Use this list' });
-    c.active = h('span', { class: 'lc-active', text: '✅ Active' });
+    c.retry = h('button', { class: 'btn btn-ghost btn-xs invisible', type: 'button', text: '🔁 重试' });
+    c.use = h('button', { class: 'btn btn-primary btn-xs', type: 'button', text: '⬇️ 使用此列表' });
+    c.active = h('span', { class: 'lc-active', text: '✅ 当前使用' });
     c.retry.addEventListener('click', () => refreshMeta(id));
     c.use.addEventListener('click', () => confirmApply(id));
     c.card = h('article', { class: 'lcard' },
@@ -790,15 +790,15 @@
     c.count.className = '';
     const hasCount = l.count !== null && l.count !== undefined;
     if (hasCount) {
-      c.count.textContent = '🔢 ' + fmtNum(l.count) + ' entries';
-      c.date.textContent = '📅 ' + (l.date ? fmtDate(l.date) : 'Unknown');
+      c.count.textContent = '🔢 ' + fmtNum(l.count) + ' 条';
+      c.date.textContent = '📅 ' + (l.date ? fmtDate(l.date) : '未知');
     } else if (l.busy || !l.error) {
       c.count.appendChild(sk('sk-line'));
       c.date.appendChild(sk('sk-line'));
     } else {
-      c.count.textContent = '❌ Couldn’t fetch entry count';
+      c.count.textContent = '❌ 无法获取条目数量';
       c.count.className = 'is-err';
-      c.date.textContent = '📅 ' + (l.date ? fmtDate(l.date) : 'Unknown');
+      c.date.textContent = '📅 ' + (l.date ? fmtDate(l.date) : '未知');
     }
     c.retry.classList.toggle('invisible', !(l.error && !l.busy));
     c.retry.disabled = !!l.busy;
@@ -808,7 +808,7 @@
     c.active.hidden = !isActive;
     const enabled = st ? st.enabled : (L ? L.enabled : true);
     c.use.disabled = S.busy || S.syncBusy || !enabled;
-    c.use.title = !enabled ? 'Enable the blocker first' : '';
+    c.use.title = !enabled ? '请先开启拦截' : '';
   }
 
   function activeAddonIds() {
@@ -861,34 +861,34 @@
     r.ico.textContent = a.icon || '🧩';
     r.name.textContent = a.name;
     while (r.top.children.length > 1) r.top.removeChild(r.top.lastChild);
-    if (a.suggested) r.top.appendChild(h('span', { class: 'tag tag-good', text: '✨ For your device' }));
-    if (a.warn === 'heavy') r.top.appendChild(h('span', { class: 'tag tag-warn', text: '🐘 Large' }));
-    if (a.warn === 'breaks') r.top.appendChild(h('span', { class: 'tag tag-warn', text: '⚠️ Strict' }));
+    if (a.suggested) r.top.appendChild(h('span', { class: 'tag tag-good', text: '✨ 适合你的设备' }));
+    if (a.warn === 'heavy') r.top.appendChild(h('span', { class: 'tag tag-warn', text: '🐘 大体积' }));
+    if (a.warn === 'breaks') r.top.appendChild(h('span', { class: 'tag tag-warn', text: '⚠️ 严格' }));
     r.desc.textContent = a.desc;
     r.desc.title = a.desc;
     clear(r.meta);
     r.meta.className = 'arow-meta';
     const known = a.count !== null && a.count !== undefined ? a.count : a.installed;
     if (known !== null && known !== undefined) {
-      let m = '🔢 ' + fmtNum(known) + ' ' + plural(known, 'entry', 'entries');
-      if (a.enabled && a.added !== null && a.added !== undefined) m += '  ·  ➕ ' + fmtNum(a.added) + ' new';
+      let m = '🔢 ' + fmtNum(known) + ' ' + plural(known, '条', '条');
+      if (a.enabled && a.added !== null && a.added !== undefined) m += '  ·  ➕ 新增 ' + fmtNum(a.added);
       r.meta.textContent = m;
     } else if (a.error && !a.busy) {
-      r.meta.textContent = '❌ Couldn’t fetch details';
+      r.meta.textContent = '❌ 无法获取详情';
       r.meta.className = 'arow-meta is-err';
     } else if (a.custom && !a.busy) {
-      r.meta.textContent = a.enabled ? '🔢 Installed' : '🔢 Size shown after the first download';
+      r.meta.textContent = a.enabled ? '🔢 已安装' : '🔢 首次下载后显示大小';
     } else {
       r.meta.appendChild(sk('sk-line w-40'));
     }
     r.row.classList.toggle('is-on', on);
     r.row.classList.toggle('is-changed', on !== !!a.enabled);
     r.sw.setAttribute('aria-checked', on ? 'true' : 'false');
-    r.sw.setAttribute('aria-label', (on ? 'Turn off ' : 'Turn on ') + a.name);
+    r.sw.setAttribute('aria-label', (on ? '关闭 ' : '开启 ') + a.name);
     r.sw.disabled = addonsLocked();
     r.del.hidden = !a.custom;
     r.del.disabled = S.busy || S.syncBusy;
-    r.del.setAttribute('aria-label', 'Remove ' + a.name);
+    r.del.setAttribute('aria-label', '移除 ' + a.name);
   }
 
   function renderAddons() {
@@ -909,12 +909,12 @@
         if (!items.length && g[0] !== 'custom') return;
         const head = h('div', { class: 'agroup' }, h('span', { text: g[1] }));
         if (g[0] === 'custom') {
-          const add = h('button', { class: 'btn btn-ghost btn-xs', type: 'button', id: 'custom-add', text: '➕ Add a list' });
+          const add = h('button', { class: 'btn btn-ghost btn-xs', type: 'button', id: 'custom-add', text: '➕ 添加列表' });
           add.addEventListener('click', addCustomFlow);
           head.appendChild(add);
         }
         box.appendChild(head);
-        if (!items.length) box.appendChild(h('div', { class: 'empty', text: '🌱 Add any HTTPS hosts or domain list by its address.' }));
+        if (!items.length) box.appendChild(h('div', { class: 'empty', text: '🌱 通过地址添加任意 HTTPS hosts 或域名列表。' }));
         items.forEach((a) => {
           if (!rows[a.id]) rows[a.id] = makeRow(a.id);
           box.appendChild(rows[a.id].row);
@@ -933,7 +933,7 @@
     const n = d.on.length + d.off.length;
     const bar = $('addon-bar');
     bar.hidden = n === 0;
-    $('addon-bar-text').textContent = '🧩 ' + n + ' ' + plural(n, 'change', 'changes');
+    $('addon-bar-text').textContent = '🧩 ' + n + ' ' + plural(n, '项更改', '项更改');
     $('addon-apply').disabled = addonsLocked();
     $('addon-reset').disabled = S.busy || S.syncBusy;
   }
@@ -941,8 +941,8 @@
   function toggleAddon(id) {
     if (addonsLocked()) {
       const st = S.status;
-      if (st && !st.enabled) toast('🔴 Enable the blocker first.', 'warn');
-      else if (st && st.setup !== 'ready') toast('⏳ Download your main list first.', 'warn');
+      if (st && !st.enabled) toast('🔴 请先开启拦截。', 'warn');
+      else if (st && st.setup !== 'ready') toast('⏳ 请先下载主列表。', 'warn');
       return;
     }
     const sel = addonSelection().slice();
@@ -975,17 +975,17 @@
     const q = S.ruleFilter.trim().toLowerCase();
     const list = q ? all.filter((d) => d.indexOf(q) >= 0) : all;
     if (!all.length) {
-      ul.appendChild(h('li', { class: 'empty', text: S.tab === 'allow' ? '🌱 No allow rules yet. Add a domain above to always let it through.' : '🌱 No block rules yet. Add a domain above to always block it.' }));
+      ul.appendChild(h('li', { class: 'empty', text: S.tab === 'allow' ? '🌱 还没有放行规则。在上方添加域名，即可始终放行。' : '🌱 还没有拦截规则。在上方添加域名，即可始终拦截。' }));
       return;
     }
     if (!list.length) {
-      ul.appendChild(h('li', { class: 'empty', text: '🔎 No rule matches “' + q + '”.' }));
+      ul.appendChild(h('li', { class: 'empty', text: '🔎 没有匹配“' + q + '”的规则。' }));
       return;
     }
     const type = S.tab;
     const frag = document.createDocumentFragment();
     list.slice().reverse().forEach((d) => {
-      const x = h('button', { class: 'rule-x', type: 'button', 'aria-label': 'Remove ' + d, text: '🗑️' });
+      const x = h('button', { class: 'rule-x', type: 'button', 'aria-label': '移除 ' + d, text: '🗑️' });
       x.disabled = S.busy || S.syncBusy;
       x.addEventListener('click', () => deleteRule(type, d, x));
       frag.appendChild(h('li', { class: 'rule' }, h('span', { class: 'rule-d', text: (type === 'allow' ? '✅ ' : '⛔ ') + d }), x));
@@ -1011,13 +1011,13 @@
     const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 48;
     clear(box);
     if (!logs.length) {
-      const empty = { all: '📭 No log entries yet.', warn: '✅ No warnings or errors.', error: '✅ No errors.' };
+      const empty = { all: '📭 暂无日志。', warn: '✅ 没有警告或错误。', error: '✅ 没有错误。' };
       box.appendChild(h('div', { class: 'empty', text: empty[S.logLevel] || empty.all }));
       return;
     }
     const frag = document.createDocumentFragment();
     logs.forEach((l) => {
-      const lvl = l.l === 'ERROR' ? ['is-error', '❌ ERROR'] : (l.l === 'WARN' ? ['is-warn', '⚠️ WARN'] : ['is-info', 'ℹ️ INFO']);
+      const lvl = l.l === 'ERROR' ? ['is-error', '❌ 错误'] : (l.l === 'WARN' ? ['is-warn', '⚠️ 警告'] : ['is-info', 'ℹ️ 信息']);
       frag.appendChild(h('div', { class: 'log ' + lvl[0] },
         h('span', { class: 'log-t', text: logTime(l.t) }),
         h('span', { class: 'log-l', text: lvl[1] }),
@@ -1092,11 +1092,11 @@
 
   function opTitle(op) {
     const name = listName(op.list);
-    if (op.kind === 'update' || op.kind === 'auto') return 'Updating your lists';
-    if (op.kind === 'enable') return 'Turning blocking back on';
-    if (op.kind === 'addons') return 'Applying add-ons';
-    if (op.kind === 'setup') return 'Downloading ' + name;
-    return 'Installing ' + name;
+    if (op.kind === 'update' || op.kind === 'auto') return '正在更新列表';
+    if (op.kind === 'enable') return '正在重新开启拦截';
+    if (op.kind === 'addons') return '正在应用附加列表';
+    if (op.kind === 'setup') return '正在下载 ' + name;
+    return '正在安装 ' + name;
   }
 
   function opIcon(op) {
@@ -1115,8 +1115,8 @@
         view: 'progress',
         onDismiss: hideProgress,
         actions: [
-          { label: '✖️ Cancel', class: 'btn-ghost', id: 'pg-cancel', onClick: cancelOp },
-          { label: '🔽 Hide', class: 'btn-ghost', onClick: hideProgress }
+          { label: '✖️ 取消', class: 'btn-ghost', id: 'pg-cancel', onClick: cancelOp },
+          { label: '🔽 收起', class: 'btn-ghost', onClick: hideProgress }
         ]
       });
     }
@@ -1158,13 +1158,13 @@
   }
 
   function phaseLine(op) {
-    if (op.cancelling) return '✖️ Cancelling…';
+    if (op.cancelling) return '✖️ 正在取消…';
     const base = PHASE_TEXT[op.phase] || PHASE_TEXT.prepare;
     const fetching = op.phase === 'check' || op.phase === 'download' || op.phase === 'verify' || op.phase === 'optimize';
     if (!fetching || !op.sourceName) return base;
-    const verb = { check: '🔎 Checking', download: '⬇️ Downloading', verify: '🔍 Verifying', optimize: '🧹 Optimizing' }[op.phase];
+    const verb = { check: '🔎 正在检查', download: '⬇️ 正在下载', verify: '🔍 正在校验', optimize: '🧹 正在优化' }[op.phase];
     let line = verb + ' ' + op.sourceName;
-    if (op.items > 1 && op.item > 0) line += ' (' + op.item + ' of ' + op.items + ')';
+    if (op.items > 1 && op.item > 0) line += '（第 ' + op.item + ' 个，共 ' + op.items + ' 个）';
     return line + '…';
   }
 
@@ -1187,20 +1187,20 @@
       PV.pct.textContent = '';
     }
     if (op.phase === 'download') {
-      PV.left.textContent = n.total > 0 ? fmtMB(n.bytes) + ' of ' + fmtMB(n.total) : fmtMB(n.bytes) + ' downloaded';
+      PV.left.textContent = n.total > 0 ? fmtMB(n.bytes) + ' / ' + fmtMB(n.total) : '已下载 ' + fmtMB(n.bytes);
       PV.right.textContent = speed > 0 ? fmtMB(speed) + '/s' : '';
     } else if (n.idx > 0) {
-      PV.left.textContent = n.total > 0 ? '✅ Downloaded ' + fmtMB(n.total) : '✅ Download complete';
+      PV.left.textContent = n.total > 0 ? '✅ 已下载 ' + fmtMB(n.total) : '✅ 下载完成';
       PV.right.textContent = '';
     } else {
-      PV.left.textContent = op.phase === 'check' ? 'Comparing with the source…' : 'Getting ready…';
+      PV.left.textContent = op.phase === 'check' ? '正在与源列表比对…' : '正在准备…';
       PV.right.textContent = '';
     }
     const cancel = $('pg-cancel');
     if (cancel) {
       cancel.disabled = !op.cancellable || !!op.cancelling;
       const lab = cancel.querySelector('.btn-label') || cancel;
-      lab.textContent = op.cancelling ? '✖️ Cancelling…' : '✖️ Cancel';
+      lab.textContent = op.cancelling ? '✖️ 正在取消…' : '✖️ 取消';
     }
     updateMini(op);
   }
@@ -1298,36 +1298,36 @@
   function showResult(op) {
     const msg = stripLead(op.message);
     let icon = '✅';
-    let title = 'Done';
+    let title = '已完成';
     let actions = gotIt();
     const body = [para(msg, 'center')];
     if (op.state === 'success') {
-      if (op.code === 'up_to_date') title = 'Already up to date';
-      else if (op.code === 'unchanged') title = 'Nothing to change';
-      else if (op.kind === 'update' || op.kind === 'auto') title = 'Lists updated';
-      else if (op.kind === 'addons') title = 'Add-ons applied';
-      else title = 'Ready to go';
+      if (op.code === 'up_to_date') title = '已是最新版本';
+      else if (op.code === 'unchanged') title = '没有需要更改的内容';
+      else if (op.kind === 'update' || op.kind === 'auto') title = '列表已更新';
+      else if (op.kind === 'addons') title = '附加列表已应用';
+      else title = '已准备就绪';
       if (op.reboot) {
-        body.push(note('💡 No rush — your current protection keeps working until you reboot.', 'warn'));
+        body.push(note('💡 不用着急，重启前当前防护仍然有效。', 'warn'));
         actions = [
-          { label: '⏰ Later', class: 'btn-ghost', onClick: () => Modal.close() },
-          { label: '🔁 Reboot now', class: 'btn-warn', onClick: rebootFlow }
+          { label: '⏰ 稍后', class: 'btn-ghost', onClick: () => Modal.close() },
+          { label: '🔁 立即重启', class: 'btn-warn', onClick: rebootFlow }
         ];
       } else if (op.live) {
-        body.push(note('⚡ Applied live. Apps that were already open may need a restart to notice.'));
+        body.push(note('⚡ 已即时生效。已经打开的应用可能需要重启才能感知。'));
       }
     } else if (op.state === 'cancelled') {
       icon = '✖️';
-      title = 'Cancelled';
+      title = '已取消';
     } else {
       icon = '❌';
-      const t = { apply: 'Couldn’t switch lists', update: 'Update failed', auto: 'Update failed', enable: 'Couldn’t enable blocking', setup: 'Download failed', addons: 'Couldn’t apply add-ons' };
-      title = t[op.kind] || 'Something went wrong';
-      if (!/nothing was changed|restored|intact/i.test(op.message || '')) body.push(note('🛟 Nothing was lost — your previous hosts file is still in place.', 'err'));
+      const t = { apply: '无法切换列表', update: '更新失败', auto: '更新失败', enable: '无法开启拦截', setup: '下载失败', addons: '无法应用附加列表' };
+      title = t[op.kind] || '出现了一些问题';
+      if (!/没有更改|已恢复|未受影响|保持原样|原文件/i.test(op.message || '')) body.push(note('🛟 没有丢失数据，之前的 hosts 文件仍然保留。', 'err'));
       if (op.kind === 'apply' || op.kind === 'update' || op.kind === 'setup' || op.kind === 'enable') {
         actions = [
-          { label: '👌 Got it', class: 'btn-ghost', onClick: () => Modal.close() },
-          { label: '🔁 Try again', class: 'btn-primary', onClick: () => retryOp(op) }
+          { label: '👌 知道了', class: 'btn-ghost', onClick: () => Modal.close() },
+          { label: '🔁 重试', class: 'btn-primary', onClick: () => retryOp(op) }
         ];
       }
     }
@@ -1342,14 +1342,14 @@
 
   function showReplyError(r, kind) {
     S.opView = false;
-    const t = { apply: 'Couldn’t switch lists', update: 'Couldn’t start the update', enable: 'Couldn’t enable blocking', addons: 'Couldn’t apply add-ons', source: 'Couldn’t add the list' };
+    const t = { apply: '无法切换列表', update: '无法开始更新', enable: '无法开启拦截', addons: '无法应用附加列表', source: '无法添加列表' };
     if (r.code === 'offline' || r.code === 'unauthorized' || r.code === 'no_token' || r.code === 'framed') {
       Modal.close();
       return;
     }
     Modal.show({
       icon: r.code === 'busy' ? '⏳' : (r.code === 'already_active' ? '⚠️' : '❌'),
-      title: r.code === 'busy' ? 'Please wait' : (r.code === 'already_active' ? 'Already active' : (t[kind] || 'Something went wrong')),
+      title: r.code === 'busy' ? '请稍候' : (r.code === 'already_active' ? '已在生效中' : (t[kind] || '出现了一些问题')),
       body: [para(stripLead(r.message), 'center')],
       view: 'result',
       actions: gotIt()
@@ -1365,11 +1365,11 @@
     const st = S.status;
     if (!l || !st || S.busy) return;
     if (!st.enabled) {
-      toast('🔴 Enable the blocker first.', 'warn');
+      toast('🔴 请先开启拦截。', 'warn');
       return;
     }
     const facts = [];
-    if (l.count) facts.push(h('span', { class: 'fact', text: '🔢 ~' + fmtNum(l.count) + ' entries' }));
+    if (l.count) facts.push(h('span', { class: 'fact', text: '🔢 ~' + fmtNum(l.count) + ' 条' }));
     if (l.size) facts.push(h('span', { class: 'fact', text: '⬇️ ~' + fmtMB(l.size) }));
     if (l.date) facts.push(h('span', { class: 'fact', text: '📅 ' + fmtDate(l.date) }));
     const body = [
@@ -1378,11 +1378,11 @@
     ];
     if (facts.length) body.push(h('div', { class: 'facts' }, facts));
     if (l.level === 'orange' || l.level === 'red') {
-      body.push(note('⚠️ This is a strict list. Some sites or app features may stop working — you can always allow a domain in 🧩 Domain Rules.', 'warn'));
+      body.push(note('⚠️ 这是一份严格列表，部分网站或应用功能可能无法使用；你随时可以在 🧩 域名规则 中放行域名。', 'warn'));
     }
     const kept = (st.addons || []).length;
-    body.push(note((st.live ? '⚡ It takes effect right away whenever your device allows it.' : '🔁 A reboot is needed to activate it.') + ' Your domain rules' + (kept ? ' and add-ons' : '') + ' are kept.'));
-    const ok = await confirmBox({ icon: '📋', title: 'Switch to ' + l.name + '?', body: body, ok: '⬇️ Apply list' });
+    body.push(note((st.live ? '⚡ 设备允许时会立即生效。' : '🔁 需要重启后才能生效。') + ' 你的域名规则' + (kept ? '和附加列表' : '') + '会保留。'));
+    const ok = await confirmBox({ icon: '📋', title: '切换到 ' + l.name + '？', body: body, ok: '⬇️ 应用列表' });
     if (!ok) return;
     startApply(id);
   }
@@ -1429,7 +1429,7 @@
     d.on.forEach((id) => {
       const a = findAddon(id);
       if (!a) return;
-      items.push(h('li', { text: '➕ ' + (a.icon ? a.icon + ' ' : '') + a.name + (a.count ? ' · ~' + fmtNum(a.count) + ' entries' : '') }));
+      items.push(h('li', { text: '➕ ' + (a.icon ? a.icon + ' ' : '') + a.name + (a.count ? ' · 约 ' + fmtNum(a.count) + ' 条' : '') }));
       extra += Number(a.count) || 0;
       if (a.warn && ADDON_WARN[a.warn] && warns.indexOf(ADDON_WARN[a.warn]) < 0) warns.push(ADDON_WARN[a.warn]);
     });
@@ -1439,8 +1439,8 @@
     });
     const body = [h('ul', { class: 'change-list' }, items)];
     warns.forEach((w) => body.push(note(w, 'warn')));
-    if (extra > 0) body.push(note('🧮 Up to ' + fmtNum(extra) + ' more entries. Domains your lists already block are only counted once.'));
-    const ok = await confirmBox({ icon: '🧩', title: 'Apply add-on changes?', body: body, ok: '✅ Apply' });
+    if (extra > 0) body.push(note('🧮 最多增加 ' + fmtNum(extra) + ' 条记录；列表已拦截的域名只计算一次。'));
+    const ok = await confirmBox({ icon: '🧩', title: '应用附加列表变更？', body: body, ok: '✅ 应用' });
     if (!ok) return;
     const sel = addonSelection().slice();
     await startJob('addons', 'addons', [sel.join(',')], { list: S.status ? S.status.list : '' });
@@ -1448,20 +1448,20 @@
 
   function checkUrl(raw) {
     const s = String(raw || '').trim();
-    if (!s) return { err: '✏️ Enter the address of a list first.' };
-    if (!/^https:\/\//i.test(s)) return { err: '🚫 Enter a full HTTPS address, like https://example.com/hosts.txt' };
-    if (s.length > 300) return { err: '🚫 That address is too long.' };
-    if (/[^A-Za-z0-9._~:/?&=%+,@-]/.test(s)) return { err: '🚫 That address contains characters that aren’t allowed.' };
+    if (!s) return { err: '✏️ 请先输入列表地址。' };
+    if (!/^https:\/\//i.test(s)) return { err: '🚫 请输入完整的 HTTPS 地址，例如 https://example.com/hosts.txt' };
+    if (s.length > 300) return { err: '🚫 该地址过长。' };
+    if (/[^A-Za-z0-9._~:/?&=%+,@-]/.test(s)) return { err: '🚫 该地址包含不允许的字符。' };
     // Match the backend rule: userinfo in the authority is never accepted.
-    if (/^https:\/\/[^/?#]*@/i.test(s)) return { err: '🚫 Addresses with a user name aren’t allowed.' };
+    if (/^https:\/\/[^/?#]*@/i.test(s)) return { err: '🚫 不允许包含用户名的地址。' };
     return { url: 'https://' + s.slice(8) };
   }
 
   function addCustomFlow() {
     if (S.busy || S.syncBusy) return;
-    const url = h('input', { type: 'text', inputmode: 'url', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', maxlength: '300', placeholder: 'https://example.com/hosts.txt', 'aria-label': 'List address' });
-    const name = h('input', { type: 'text', autocomplete: 'off', maxlength: '40', placeholder: 'Name (optional)', 'aria-label': 'List name' });
-    const msg = h('p', { class: 'fine', text: 'Hosts files, plain domain lists and simple ||domain^ lists are understood.' });
+    const url = h('input', { type: 'text', inputmode: 'url', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', maxlength: '300', placeholder: 'https://example.com/hosts.txt', 'aria-label': '列表地址' });
+    const name = h('input', { type: 'text', autocomplete: 'off', maxlength: '40', placeholder: '名称（可选）', 'aria-label': '列表名称' });
+    const msg = h('p', { class: 'fine', text: '支持 hosts 文件、纯域名列表和简单的 ||domain^ 列表。' });
     const submit = async () => {
       const c = checkUrl(url.value);
       if (c.err) {
@@ -1475,17 +1475,17 @@
     name.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
     Modal.show({
       icon: '🔗',
-      title: 'Add your own list',
+      title: '添加自定义列表',
       body: [
         h('label', { class: 'field' }, url),
         h('label', { class: 'field' }, name),
         msg,
-        note('🛡️ Whatever a list contains, HostKeeper only ever turns its entries into blocks. A list can’t redirect a domain somewhere else.')
+        note('🛡️ 无论列表内容是什么，HostKeeper 只会把条目转换为拦截规则，无法把域名重定向到其他地址。')
       ],
       view: 'custom',
       actions: [
-        { label: '↩️ Not now', class: 'btn-ghost', onClick: () => Modal.close() },
-        { label: '➕ Add list', class: 'btn-primary', onClick: submit }
+        { label: '↩️ 暂不', class: 'btn-ghost', onClick: () => Modal.close() },
+        { label: '➕ 添加列表', class: 'btn-primary', onClick: submit }
       ]
     });
     setTimeout(() => {
@@ -1502,9 +1502,9 @@
     if (!a || S.busy || S.syncBusy) return;
     const ok = await confirmBox({
       icon: '🗑️',
-      title: 'Remove ' + a.name + '?',
-      body: [para('The list is removed from HostKeeper' + (a.enabled ? ' and its entries stop being blocked.' : '.'), 'center')],
-      ok: '🗑️ Remove',
+      title: '移除 ' + a.name + '?',
+      body: [para('该列表将从 HostKeeper 中移除' + (a.enabled ? '，其条目也会停止拦截。' : '。'), 'center')],
+      ok: '🗑️ 移除',
       okClass: 'btn-danger'
     });
     if (!ok) return;
@@ -1538,9 +1538,9 @@
     if (st.enabled) {
       const ok = await confirmBox({
         iconNode: powerIcon(),
-        title: 'Disable HostKeeper?',
-        body: [para('Ads and trackers won’t be blocked ' + (st.live ? 'from now on' : 'after the next reboot') + '. Your lists and domain rules are kept, so you can turn it back on anytime.', 'center')],
-        ok: 'Disable',
+        title: '关闭 HostKeeper？',
+        body: [para('广告和追踪器将' + (st.live ? '从现在起不再被拦截' : '在下次重启后不再被拦截') + '。列表和域名规则会保留，你随时可以重新开启。', 'center')],
+        ok: '关闭',
         okClass: 'btn-danger',
         power: true
       });
@@ -1574,42 +1574,42 @@
   async function rebootFlow() {
     const ok = await confirmBox({
       icon: '🔁',
-      title: 'Reboot now?',
-      body: [para('Your device restarts to apply the new hosts file. Save your work in other apps first.', 'center')],
-      ok: '🔁 Reboot',
+      title: '立即重启？',
+      body: [para('设备将重启以应用新的 hosts 文件。请先保存其他应用中的工作。', 'center')],
+      ok: '🔁 重启',
       okClass: 'btn-warn'
     });
     if (!ok) return;
     const r = await api('reboot');
     if (r.ok) {
-      Modal.show({ icon: '🔁', title: 'Rebooting…', body: [para('See you in a moment. Your new settings are active after the restart.', 'center')], actions: [], dismissible: false, view: 'reboot' });
+      Modal.show({ icon: '🔁', title: '正在重启…', body: [para('稍后见。重启后新设置即会生效。', 'center')], actions: [], dismissible: false, view: 'reboot' });
     } else {
-      Modal.show({ icon: '❌', title: 'Couldn’t reboot', body: [para(stripLead(r.message), 'center')], view: 'result', actions: gotIt() });
+      Modal.show({ icon: '❌', title: '无法重启', body: [para(stripLead(r.message), 'center')], view: 'result', actions: gotIt() });
     }
   }
 
   function statusRows(st) {
     const addons = st.addons || [];
-    const mounts = { manager: 'Root manager', self: 'HostKeeper (direct)', conflict: 'Another module', failed: '❌ Mount failed' };
+    const mounts = { manager: 'Root 管理器', self: 'HostKeeper（直接挂载）', conflict: '其他模块', failed: '❌ 挂载失败' };
     return [
-      ['🛡️ Blocker', st.enabled ? '🟢 On' : '🔴 Off'],
-      ['📋 Active list', st.listName || '—'],
-      ['🎚️ Level', (LEVEL[st.level] || '') + ' ' + (st.levelText || '')],
-      ['➕ Add-ons', addons.length ? addons.map((a) => a.name).join(', ') : 'None'],
-      ['🔢 Domains blocked', st.setup === 'ready' ? (st.enabled ? fmtNum(st.domains) : '0 (paused)') : '—'],
-      ['✅ Allow rules', fmtNum(st.allow) + (st.stats && st.stats.allowed ? ' · unblocking ' + fmtNum(st.stats.allowed) : '')],
-      ['⛔ Block rules', fmtNum(st.block)],
-      ['🕒 Last update', st.updated && st.setup === 'ready' ? stampFmt.format(new Date(st.updated * 1000)) + ' · ' + ago(st.updated) : 'Never'],
-      ['🔄 Auto-update', (AUTO_TEXT[st.autoupdate] || 'Off') + (st.autoupdate ? (st.sched ? ' · running' : ' · starts at boot') : '')],
-      ['⚡ Live apply', st.live ? 'On' : 'Off'],
-      ['🔁 Reboot pending', st.reboot ? '🟡 Yes' : 'No'],
-      ['🧪 Applied', appliedText(st.applied)[0]],
-      ['🔗 Mounted by', mounts[st.mount] || '—'],
-      ['🔏 Private DNS', st.guard ? st.guard + ' (protected)' : 'No provider hostname set'],
-      ['🧾 Hosts file', fmtMB(st.hostsSize)],
-      ['🧰 Root manager', (st.manager || 'Unknown') + (st.managerVersion ? ' ' + st.managerVersion : '')],
-      ['📦 Module version', (st.version || VERSION) + ' (' + (st.versionCode || VERSION_CODE) + ')'],
-      ['🖥️ Interface', Bridge.mode === 'ksu' ? 'Root manager WebUI' : 'Local server · 127.0.0.1:9090']
+      ['🛡️ 拦截状态', st.enabled ? '🟢 开启' : '🔴 关闭'],
+      ['📋 当前列表', st.listName || '—'],
+      ['🎚️ 强度', (LEVEL[st.level] || '') + ' ' + (st.levelText || '')],
+      ['➕ 附加列表', addons.length ? addons.map((a) => a.name).join('、') : '无'],
+      ['🔢 已拦截域名', st.setup === 'ready' ? (st.enabled ? fmtNum(st.domains) : '0（已暂停）') : '—'],
+      ['✅ 放行规则', fmtNum(st.allow) + (st.stats && st.stats.allowed ? ' · 正在放行 ' + fmtNum(st.stats.allowed) : '')],
+      ['⛔ 拦截规则', fmtNum(st.block)],
+      ['🕒 上次更新', st.updated && st.setup === 'ready' ? stampFmt.format(new Date(st.updated * 1000)) + ' · ' + ago(st.updated) : '从未'],
+      ['🔄 自动更新', (AUTO_TEXT[st.autoupdate] || '关闭') + (st.autoupdate ? (st.sched ? ' · 运行中' : ' · 开机后启动') : '')],
+      ['⚡ 即时生效', st.live ? '开启' : '关闭'],
+      ['🔁 等待重启', st.reboot ? '🟡 是' : '否'],
+      ['🧪 生效状态', appliedText(st.applied)[0]],
+      ['🔗 挂载方', mounts[st.mount] || '—'],
+      ['🔏 私人 DNS', st.guard ? st.guard + '（已保护）' : '未设置提供商主机名'],
+      ['🧾 Hosts 文件', fmtMB(st.hostsSize)],
+      ['🧰 Root 管理器', (st.manager || '未知') + (st.managerVersion ? ' ' + st.managerVersion : '')],
+      ['📦 模块版本', (st.version || VERSION) + ' (' + (st.versionCode || VERSION_CODE) + ')'],
+      ['🖥️ 界面', Bridge.mode === 'ksu' ? 'Root 管理器 WebUI' : '本地服务 · 127.0.0.1:9090']
     ];
   }
 
@@ -1628,18 +1628,18 @@
     const list = h('div', { class: 'kv-list' }, statusRows(st).map((row) => h('div', { class: 'kv' }, h('span', { class: 'k', text: row[0] }), h('span', { class: 'v', text: row[1] }))));
     const body = [list];
     if (st.conflicts && st.conflicts.length) {
-      const names = st.conflicts.map((c) => (c === 'hosts' ? 'Systemless hosts' : c)).join(', ');
-      body.push(note('⚠️ These modules also replace /system/etc/hosts: ' + names + '. Disable them so HostKeeper can work.', 'warn'));
+      const names = st.conflicts.map((c) => (c === 'hosts' ? '系统 hosts 模块' : c)).join(', ');
+      body.push(note('⚠️ 以下模块也会替换 /system/etc/hosts：' + names + '。请停用它们，HostKeeper 才能正常工作。', 'warn'));
     }
-    if (st.adaway) body.push(note('⚠️ AdAway is installed. Don’t use its root or systemless mode together with HostKeeper.', 'warn'));
-    if (st.applied === 'pending') body.push(note('🔁 Your latest changes are saved and become active after a reboot.'));
+    if (st.adaway) body.push(note('⚠️ 检测到 AdAway。请不要同时使用它的 root 或 systemless 模式与 HostKeeper。', 'warn'));
+    if (st.applied === 'pending') body.push(note('🔁 最新更改已保存，将在重启后生效。'));
     if (st.applied === 'inactive') {
       body.push(note(st.mount === 'failed'
-        ? '🔴 Android isn’t using HostKeeper’s hosts file, and mounting it at startup failed. Check 📜 Logs for details.'
-        : '🔴 Android isn’t using HostKeeper’s hosts file yet. Reboot — HostKeeper mounts it automatically at startup.', 'err'));
+        ? '🔴 Android 未使用 HostKeeper 的 hosts 文件，且开机挂载失败。请查看 📜 日志 了解详情。'
+        : '🔴 Android 尚未使用 HostKeeper 的 hosts 文件。请重启，HostKeeper 会在开机时自动挂载。', 'err'));
     }
-    if (st.applied === 'applied' && st.mount === 'self') body.push(note('🔗 Your root manager didn’t mount the hosts file, so HostKeeper mounted it directly. Blocking works normally.'));
-    Modal.show({ icon: '📊', title: 'Status', body: body, view: 'status', actions: gotIt() });
+    if (st.applied === 'applied' && st.mount === 'self') body.push(note('🔗 Root 管理器没有挂载 hosts 文件，因此 HostKeeper 直接进行了挂载。拦截工作正常。'));
+    Modal.show({ icon: '📊', title: '状态', body: body, view: 'status', actions: gotIt() });
   }
 
   function switchRow(name, desc, on, onToggle) {
@@ -1658,14 +1658,14 @@
   function showSettings() {
     const st = S.status;
     if (!st) return;
-    const live = switchRow('⚡ Live apply', 'Write changes straight into the mounted hosts file so they work without a reboot. Turn it off to keep the classic behaviour: swap the file and reboot.', !!st.live, async (sw) => {
+    const live = switchRow('⚡ 即时生效', '把更改直接写入已挂载的 hosts 文件，无需重启即可生效。关闭后恢复经典方式：替换文件并重启。', !!st.live, async (sw) => {
       const next = sw.getAttribute('aria-checked') !== 'true';
       sw.disabled = true;
       const r = await saveSetting('live', next ? 1 : 0);
       sw.disabled = false;
       if (r.ok) sw.setAttribute('aria-checked', next ? 'true' : 'false');
     });
-    const seg = h('div', { class: 'seg seg-4', role: 'tablist', 'aria-label': 'Auto-update interval' });
+    const seg = h('div', { class: 'seg seg-4', role: 'tablist', 'aria-label': '自动更新间隔' });
     const paint = (v) => {
       for (let i = 0; i < seg.children.length; i++) {
         const on = Number(seg.children[i].getAttribute('data-v')) === Number(v);
@@ -1685,14 +1685,14 @@
     });
     paint(st.autoupdate || 0);
     const auto = h('div', { class: 'set-block' },
-      h('div', { class: 'set-name', text: '🔄 Auto-update' }),
-      h('div', { class: 'set-desc', text: 'Check your lists on a schedule and download only what changed. While it is on, one small sleeping process wakes up every 15 minutes to see whether a check is due.' }),
+      h('div', { class: 'set-name', text: '🔄 自动更新' }),
+      h('div', { class: 'set-desc', text: '按计划检查列表，只下载发生变化的内容。开启后会有一个轻量后台进程每 15 分钟醒来一次，判断是否该检查。' }),
       seg
     );
     Modal.show({
       icon: '⚙️',
-      title: 'Settings',
-      body: [live, auto, note('🌙 The sun and moon button at the top switches between the dark and light theme.')],
+      title: '设置',
+      body: [live, auto, note('🌙 顶部的太阳/月亮按钮用于切换深色与浅色主题。')],
       view: 'settings',
       actions: gotIt()
     });
@@ -1704,9 +1704,9 @@
 
   function diagView(d) {
     const sum = d.summary || { ok: 0, warn: 0, err: 0 };
-    let line = '✅ Everything looks healthy.';
-    if (sum.err) line = '❌ ' + sum.err + ' ' + plural(sum.err, 'problem needs', 'problems need') + ' attention.';
-    else if (sum.warn) line = '⚠️ ' + sum.warn + ' ' + plural(sum.warn, 'thing', 'things') + ' worth a look.';
+    let line = '✅ 一切正常。';
+    if (sum.err) line = '❌ ' + sum.err + ' 个问题需要处理。';
+    else if (sum.warn) line = '⚠️ ' + sum.warn + ' 项值得注意。';
     const list = h('div', { class: 'diag-list' }, (d.checks || []).map((c) => h('div', { class: 'diag is-' + c.level },
       h('span', { class: 'diag-ico', text: diagIcon(c.level) }),
       h('div', { class: 'diag-body' }, h('div', { class: 'diag-t', text: c.title }), h('div', { class: 'diag-d', text: c.detail }))
@@ -1717,37 +1717,37 @@
   async function showDiag() {
     const btn = $('act-diag');
     btn.disabled = true;
-    Modal.show({ icon: '🩺', title: 'Health check', body: [para('Checking the hosts file, the mount, your lists and the network…', 'center')], view: 'diag', actions: [] });
+    Modal.show({ icon: '🩺', title: '健康检查', body: [para('正在检查 hosts 文件、挂载状态、列表和网络…', 'center')], view: 'diag', actions: [] });
     const r = await api('diag');
     btn.disabled = false;
     if (Modal.view() !== 'diag') return;
     if (!r.ok) {
-      Modal.show({ icon: '❌', title: 'Health check failed', body: [para(stripLead(r.message), 'center')], view: 'result', actions: gotIt() });
+      Modal.show({ icon: '❌', title: '健康检查失败', body: [para(stripLead(r.message), 'center')], view: 'result', actions: gotIt() });
       return;
     }
     Modal.show({
       icon: '🩺',
-      title: 'Health check',
+      title: '健康检查',
       body: diagView(r.data),
       view: 'diag',
       actions: [
-        { label: '📋 Report', class: 'btn-ghost', onClick: () => showReport(r.data) },
-        { label: '👌 Got it', class: 'btn-primary', onClick: () => Modal.close() }
+        { label: '📋 报告', class: 'btn-ghost', onClick: () => showReport(r.data) },
+        { label: '👌 知道了', class: 'btn-primary', onClick: () => Modal.close() }
       ]
     });
   }
 
   function reportText(st, diag) {
-    const out = ['HostKeeper ' + (st.version || VERSION) + ' (' + (st.versionCode || VERSION_CODE) + ') report', ''];
+    const out = ['HostKeeper ' + (st.version || VERSION) + ' (' + (st.versionCode || VERSION_CODE) + ') 报告', ''];
     statusRows(st).forEach((row) => out.push(row[0] + ': ' + row[1]));
-    if (st.conflicts && st.conflicts.length) out.push('Conflicting modules: ' + st.conflicts.join(', '));
+    if (st.conflicts && st.conflicts.length) out.push('冲突模块：' + st.conflicts.join('、'));
     if (diag && diag.checks) {
-      out.push('', 'Health check');
+      out.push('', '健康检查');
       diag.checks.forEach((c) => out.push(diagIcon(c.level) + ' ' + c.title + ': ' + c.detail));
     }
     const logs = (S.logs || []).slice(-40);
     if (logs.length) {
-      out.push('', 'Recent log');
+      out.push('', '最近日志');
       logs.forEach((l) => out.push(new Date(l.t * 1000).toISOString().replace('T', ' ').slice(0, 19) + ' ' + l.l + ' ' + l.m));
     }
     return out.join('\n');
@@ -1760,16 +1760,16 @@
       return;
     }
     await loadLogs();
-    textSheet({ icon: '📋', title: 'Report', text: reportText(r.data, diag), hint: 'Paste this into a bug report. It holds no personal data — only HostKeeper’s own state.' });
+    textSheet({ icon: '📋', title: '报告', text: reportText(r.data, diag), hint: '可粘贴到问题反馈中。它不包含个人数据，只有 HostKeeper 自身状态。' });
   }
 
   async function repairFlow() {
     if (S.busy || S.syncBusy) return;
     const ok = await confirmBox({
       icon: '🛠️',
-      title: 'Repair HostKeeper?',
-      body: [para('The hosts file is rebuilt from your cached lists and rules, checked again and mounted if needed. Nothing is downloaded.', 'center')],
-      ok: '🛠️ Repair'
+      title: '修复 HostKeeper？',
+      body: [para('将使用已缓存的列表和规则重新构建 hosts 文件，再次校验，并在需要时挂载。不会下载任何内容。', 'center')],
+      ok: '🛠️ 修复'
     });
     if (!ok) return;
     Modal.close();
@@ -1835,7 +1835,7 @@
       return;
     }
     const r = extractDomain(v, 'allow');
-    if (r.domain && r.wild) setRuleMsg('→ ' + r.domain + ' allows ' + r.domain.slice(2) + ' and every subdomain', '');
+    if (r.domain && r.wild) setRuleMsg('→ ' + r.domain + ' 将放行 ' + r.domain.slice(2) + ' 及其所有子域', '');
     else if (r.domain && r.domain !== v.trim().toLowerCase()) setRuleMsg('→ ' + r.domain, '');
     else setRuleMsg('', '');
   }
@@ -1853,22 +1853,22 @@
       return false;
     }
     const other = type === 'allow' ? 'block' : 'allow';
-    const cap = (t) => (t === 'allow' ? 'Allow' : 'Block');
+    const cap = (t) => (t === 'allow' ? '放行' : '拦截');
     if (S.rules[type].indexOf(r.domain) >= 0) {
-      setRuleMsg('⚠️ ' + r.domain + ' is already in your ' + cap(type) + ' list.', 'err');
+      setRuleMsg('⚠️ ' + r.domain + ' 已在你的' + cap(type) + '列表中。', 'err');
       return false;
     }
     if (S.rules[other].indexOf(r.domain) >= 0) {
-      setRuleMsg('⚠️ Already in ' + cap(other) + ' list. Remove ' + r.domain + ' there first.', 'err');
+      setRuleMsg('⚠️ 已在' + cap(other) + '列表中。请先在那里移除 ' + r.domain + '。', 'err');
       return false;
     }
     if (S.rules[type].length >= RULE_MAX) {
-      setRuleMsg('📦 You’ve reached the limit of ' + fmtNum(RULE_MAX) + ' rules for this list. Remove some first.', 'err');
+      setRuleMsg('📦 该列表已达到 ' + fmtNum(RULE_MAX) + ' 条规则上限，请先移除一些。', 'err');
       return false;
     }
     const btn = $(type === 'allow' ? 'rule-allow' : 'rule-block');
     const label = btn.textContent;
-    btn.textContent = '⏳ Saving…';
+    btn.textContent = '⏳ 保存中…';
     setSyncBusy(true);
     const res = await api('rule-add', [type, r.domain]);
     setSyncBusy(false);
@@ -1934,11 +1934,11 @@
     else if (d.type === 'domain' && (d.status === 'clear' || d.status === 'allowed')) cls += ' is-clear';
     box.className = cls;
     box.appendChild(h('div', { class: 'lk-msg', text: r.message }));
-    if (d.applied === 'pending') box.appendChild(h('div', { class: 'lk-sub', text: '🟡 This reflects your saved setup. It becomes active after a reboot.' }));
+    if (d.applied === 'pending') box.appendChild(h('div', { class: 'lk-sub', text: '🟡 这里显示的是已保存的设置，将在重启后生效。' }));
     if (d.type === 'keyword') {
       if (d.matchCount > 0) {
-        const more = d.matchCount > d.matches.length ? ' Showing the first ' + d.matches.length + '.' : '';
-        box.appendChild(h('div', { class: 'lk-sub', text: 'Tap a domain to check it.' + more }));
+        const more = d.matchCount > d.matches.length ? ' 仅显示前 ' + d.matches.length + ' 个。' : '';
+        box.appendChild(h('div', { class: 'lk-sub', text: '点击域名即可检查。' + more }));
         box.appendChild(h('div', { class: 'lk-chips' }, d.matches.map((m) => {
           const c = h('button', { class: 'chiplet', type: 'button', text: m });
           c.addEventListener('click', () => {
@@ -1952,14 +1952,14 @@
     }
     if (d.subCount > 0) {
       const sample = d.subs.slice(0, 3).join(', ');
-      box.appendChild(h('div', { class: 'lk-sub', text: '🧩 ' + fmtNum(d.subCount) + ' blocked ' + plural(d.subCount, 'subdomain', 'subdomains') + ', such as ' + sample + '.' }));
+      box.appendChild(h('div', { class: 'lk-sub', text: '🧩 已拦截 ' + fmtNum(d.subCount) + ' 个子域，例如 ' + sample + '。' }));
     }
     const acts = [];
-    if (d.status === 'blocked' && d.rule === 'block') acts.push(lookupAction('🗑️ Remove my block rule', 'btn-ghost', () => deleteRule('block', d.domain)));
-    else if (d.status === 'blocked') acts.push(lookupAction('✅ Allow it', 'btn-allow', () => addRule('allow', d.domain)));
-    if (d.status === 'allowed' && d.ref) acts.push(lookupAction('🗑️ Remove my allow rule', 'btn-ghost', () => deleteRule('allow', d.ref)));
-    if (d.status === 'clear') acts.push(lookupAction('⛔ Block it', 'btn-block', () => addRule('block', d.domain)));
-    if (d.subCount > 0 && d.status !== 'allowed' && d.status !== 'disabled') acts.push(lookupAction('✅ Allow all subdomains', 'btn-allow', () => addRule('allow', '*.' + d.domain)));
+    if (d.status === 'blocked' && d.rule === 'block') acts.push(lookupAction('🗑️ 移除我的拦截规则', 'btn-ghost', () => deleteRule('block', d.domain)));
+    else if (d.status === 'blocked') acts.push(lookupAction('✅ 放行它', 'btn-allow', () => addRule('allow', d.domain)));
+    if (d.status === 'allowed' && d.ref) acts.push(lookupAction('🗑️ 移除我的放行规则', 'btn-ghost', () => deleteRule('allow', d.ref)));
+    if (d.status === 'clear') acts.push(lookupAction('⛔ 拦截它', 'btn-block', () => addRule('block', d.domain)));
+    if (d.subCount > 0 && d.status !== 'allowed' && d.status !== 'disabled') acts.push(lookupAction('✅ 放行所有子域', 'btn-allow', () => addRule('allow', '*.' + d.domain)));
     if (acts.length) box.appendChild(h('div', { class: 'lk-actions' }, acts));
   }
 
@@ -1967,7 +1967,7 @@
     const input = $('rule-input');
     const q = String(value === undefined ? input.value : value).trim();
     if (!q) {
-      setRuleMsg('✏️ Enter a domain or a keyword first.', 'err');
+      setRuleMsg('✏️ 请先输入域名或关键词。', 'err');
       hideLookup();
       return;
     }
@@ -1994,10 +1994,10 @@
   function exportRules() {
     const n = S.rules.allow.length + S.rules.block.length;
     if (!n) {
-      toast('🌱 You have no rules to export yet.', 'info');
+      toast('🌱 还没有可导出的规则。', 'info');
       return;
     }
-    textSheet({ icon: '📤', title: 'Export rules', text: rulesAsText(), hint: n + ' ' + plural(n, 'rule', 'rules') + '. Keep this text somewhere safe and paste it into 📥 Import to restore it.' });
+    textSheet({ icon: '📤', title: '导出规则', text: rulesAsText(), hint: '共 ' + n + ' 条规则。请妥善保存这段文本，需要恢复时粘贴到 📥 导入规则。' });
   }
 
   function parseRules(text, fallback) {
@@ -2076,7 +2076,7 @@
       return {
         ok: added > 0 || mode === 'replace',
         code: added > 0 || mode === 'replace' ? 'rules_imported' : 'import_nothing',
-        message: (added > 0 || mode === 'replace' ? '📥 Imported ' + added + ' ' + plural(added, 'rule', 'rules') + '.' : 'ℹ️ Nothing new to import.') + (skipped ? ' ' + skipped + ' skipped.' : ''),
+        message: (added > 0 || mode === 'replace' ? '📥 已导入 ' + added + ' 条规则。' : 'ℹ️ 没有新规则可导入。') + (skipped ? ' 已跳过 ' + skipped + ' 条。' : ''),
         data: last.data
       };
     }
@@ -2087,8 +2087,8 @@
     if (S.busy || S.syncBusy) return;
     let mode = 'merge';
     let fallback = S.tab;
-    const ta = h('textarea', { class: 'area', spellcheck: 'false', autocapitalize: 'off', autocorrect: 'off', 'aria-label': 'Rules to import', placeholder: 'allow example.com\nallow *.cdn.example.com\nblock ads.example.net\n\nPlain domains, one per line, work too.' });
-    const info = h('p', { class: 'fine', text: 'Paste an exported list, or one domain per line.' });
+    const ta = h('textarea', { class: 'area', spellcheck: 'false', autocapitalize: 'off', autocorrect: 'off', 'aria-label': '要导入的规则', placeholder: 'allow example.com\nallow *.cdn.example.com\nblock ads.example.net\n\n纯域名也可以，每行一个。' });
+    const info = h('p', { class: 'fine', text: '粘贴导出的规则，或每行一个域名。' });
     const seg = (items, current, onPick) => {
       const box = h('div', { class: 'seg seg-2', role: 'tablist' });
       items.forEach((it) => {
@@ -2107,11 +2107,11 @@
     const refresh = () => {
       const p = parseRules(ta.value, fallback);
       if (!ta.value.trim()) {
-        info.textContent = 'Paste an exported list, or one domain per line.';
+        info.textContent = '粘贴导出的规则，或每行一个域名。';
         info.className = 'fine';
         return p;
       }
-      info.textContent = '✅ ' + p.allow.length + ' allow · ⛔ ' + p.block.length + ' block' + (p.skipped ? ' · 🚫 ' + p.skipped + ' skipped' : '');
+      info.textContent = '✅ ' + p.allow.length + ' 条放行 · ⛔ ' + p.block.length + ' 条拦截' + (p.skipped ? ' · 🚫 跳过 ' + p.skipped + ' 条' : '');
       info.className = 'fine' + (p.allow.length + p.block.length ? ' is-ok' : ' is-err');
       return p;
     };
@@ -2119,16 +2119,16 @@
     const submit = async () => {
       const p = refresh();
       if (!p.allow.length && !p.block.length && mode !== 'replace') {
-        info.textContent = '✏️ There is nothing to import yet.';
+        info.textContent = '✏️ 还没有可导入的内容。';
         info.className = 'fine is-err';
         return;
       }
       if (mode === 'replace') {
         const sure = await confirmBox({
           icon: '♻️',
-          title: 'Replace all rules?',
-          body: [para('Your ' + (S.rules.allow.length + S.rules.block.length) + ' current rules are removed and replaced by the ' + (p.allow.length + p.block.length) + ' rules you pasted.', 'center')],
-          ok: '♻️ Replace',
+          title: '替换全部规则？',
+          body: [para('当前的 ' + (S.rules.allow.length + S.rules.block.length) + ' 条规则将被移除，替换为你粘贴的 ' + (p.allow.length + p.block.length) + ' 条规则。', 'center')],
+          ok: '♻️ 替换',
           okClass: 'btn-danger'
         });
         if (!sure) return;
@@ -2145,19 +2145,19 @@
     };
     Modal.show({
       icon: '📥',
-      title: 'Import rules',
+      title: '导入规则',
       body: [
         ta,
         info,
-        h('div', { class: 'set-desc', text: 'Lines without allow or block count as:' }),
-        seg([['allow', '✅ Allow'], ['block', '⛔ Block']], fallback, (v) => { fallback = v; refresh(); }),
-        h('div', { class: 'set-desc', text: 'What should happen to your current rules?' }),
-        seg([['merge', '➕ Keep and add'], ['replace', '♻️ Replace all']], mode, (v) => { mode = v; })
+        h('div', { class: 'set-desc', text: '未标注 allow 或 block 的行按以下类型处理：' }),
+        seg([['allow', '✅ 放行'], ['block', '⛔ 拦截']], fallback, (v) => { fallback = v; refresh(); }),
+        h('div', { class: 'set-desc', text: '如何处理当前规则？' }),
+        seg([['merge', '➕ 保留并追加'], ['replace', '♻️ 全部替换']], mode, (v) => { mode = v; })
       ],
       view: 'import',
       actions: [
-        { label: '↩️ Not now', class: 'btn-ghost', onClick: () => Modal.close() },
-        { label: '📥 Import', class: 'btn-primary', onClick: submit }
+        { label: '↩️ 暂不', class: 'btn-ghost', onClick: () => Modal.close() },
+        { label: '📥 导入', class: 'btn-primary', onClick: submit }
       ]
     });
   }
@@ -2196,9 +2196,9 @@
   async function clearLogs() {
     const ok = await confirmBox({
       icon: '🧹',
-      title: 'Clear all logs?',
-      body: [para('This removes every log entry. It doesn’t change your lists, rules or hosts file.', 'center')],
-      ok: '🧹 Clear logs',
+      title: '清空全部日志？',
+      body: [para('这会移除所有日志条目，不会更改列表、规则或 hosts 文件。', 'center')],
+      ok: '🧹 清空日志',
       okClass: 'btn-danger'
     });
     if (!ok) return;
@@ -2211,11 +2211,11 @@
   function copyLogs() {
     const logs = visibleLogs();
     if (!logs.length) {
-      toast('📭 There is nothing to copy.', 'info');
+      toast('📭 没有可复制的内容。', 'info');
       return;
     }
     const text = logs.map((l) => new Date(l.t * 1000).toISOString().replace('T', ' ').slice(0, 19) + ' ' + l.l + ' ' + l.m).join('\n');
-    textSheet({ icon: '📜', title: 'Copy logs', text: text, hint: logs.length + ' log ' + plural(logs.length, 'entry', 'entries') + '.' });
+    textSheet({ icon: '📜', title: '复制日志', text: text, hint: '共 ' + logs.length + ' 条日志。' });
   }
 
   async function openLink(id) {
@@ -2284,7 +2284,7 @@
     const apply = (t) => {
       document.documentElement.setAttribute('data-theme', t);
       btn.textContent = t === 'dark' ? '☀️' : '🌙';
-      btn.setAttribute('aria-label', t === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
+      btn.setAttribute('aria-label', t === 'dark' ? '切换到浅色主题' : '切换到深色主题');
       if (meta) meta.setAttribute('content', t === 'dark' ? '#06080d' : '#eef2f7');
     };
     apply(document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark');

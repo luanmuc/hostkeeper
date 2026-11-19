@@ -60,7 +60,7 @@ if grep -nE '^[[:space:]]*exit([[:space:]]|$)' customize.sh >/dev/null 2>&1; the
 else
   ok 'customize.sh has no direct exit'
 fi
-grep -qF 'abort "HostKeeper installation failed' customize.sh && ok 'customize.sh failure uses abort' || bad 'customize.sh failure path is missing abort'
+grep -qF 'abort "HostKeeper 安装失败' customize.sh && ok 'customize.sh failure uses abort' || bad 'customize.sh failure path is missing abort'
 if grep -qF 'Works with or without a metamodule' hostkeeper.sh; then
   bad 'hostkeeper.sh still claims metamodule-free KSU support'
 else
@@ -74,6 +74,19 @@ else
 fi
 grep -qF 'metamodule' README.md && ok 'README documents KSU metamodule requirement' || bad 'README is missing the KSU metamodule requirement'
 grep -qF '不支持自定义 Recovery' README.md && ok 'README documents manager-only install' || bad 'README is missing the manager-only install warning'
+
+printf '\nChinese UI contract\n'
+grep -qF '<html lang="zh-CN"' webroot/index.html && ok 'HTML locale is zh-CN' || bad 'HTML locale is not zh-CN'
+grep -qF 'aria-label="开启拦截"' webroot/index.html && ok 'hero switch has Chinese aria-label' || bad 'hero switch aria-label is not Chinese'
+grep -qF '>关闭</span>' webroot/index.html && ok 'initial toggle state is 关闭' || bad 'initial toggle state is not 关闭'
+grep -qF '健康检查' webroot/index.html && ok 'health check tile is Chinese' || bad 'health check tile is not Chinese'
+grep -qF '请先开启拦截' hostkeeper.sh && ok 'backend blocker message is Chinese' || bad 'backend blocker message is not Chinese'
+grep -qF "L_LEVELTXT='均衡'" hostkeeper.sh && ok 'list level text is Chinese' || bad 'list level text is not Chinese'
+if grep -RInE 'Disable HostKeeper\?|Enable blocking|Disable blocking|Loading…|Pick a blocklist' webroot >/dev/null 2>&1; then
+  bad 'legacy English UI copy is still present'
+else
+  ok 'no legacy English UI copy'
+fi
 
 printf '\nmodule.prop\n'
 if [ ! -f module.prop ]; then

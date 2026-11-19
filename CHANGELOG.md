@@ -1,3 +1,14 @@
+## v1.0.6（2026-11-19）
+
+- WebUI：整个界面改为简体中文（`lang="zh-CN"`），涵盖导航、防护区、列表、附加列表、域名规则、操作、日志、设置、状态、健康检查、报告、导入导出、进度与结果弹窗、确认框、无障碍标签
+- 后端：`list_info` 的强度标签与列表说明、`reply` 提示、`cmd_diag` 标题与详情、安装/修复/重启/打开链接提示全部中文化
+- 日志：管理器中可见的技术日志正文改为中文；保留 `INFO` / `WARN` / `ERROR` 级别键和原始技术标识，便于排错
+- 字体：CSS 增加 `Noto Sans SC` / `Source Han Sans SC` / `PingFang SC` / `Microsoft YaHei` 回退，避免中文缺字
+- 工程检查：`scripts/check.sh` 新增中文 UI 契约（locale、关键文案、无遗留英文标签），并把安装失败 `abort` 断言同步为中文
+- 回归：主机侧 UI 22/22 PASS；Bridge mock 3/3 PASS；`check.sh` 全绿
+- 版本：v1.0.5 → v1.0.6，versionCode 6 → 7
+- 状态：GitHub Pre-release `v1.0.6`（资产 `HostKeeper-v1.0.6.zip` 与 `.sha256`）
+
 ## v1.0.5（2026-11-19）
 
 - 管理器适配（主机侧）：`customize.sh` 安装失败分支改用 `abort`，不再从 sourced 脚本直接 `exit`

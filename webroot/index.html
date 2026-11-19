@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="zh-CN" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -11,8 +11,8 @@
 <title>HostKeeper</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preload" href="fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="style.css?v=1.0.5">
-<script src="theme.js?v=1.0.5"></script>
+<link rel="stylesheet" href="style.css?v=1.0.6">
+<script src="theme.js?v=1.0.6"></script>
 </head>
 <body>
 <div class="bg" aria-hidden="true"></div>
@@ -22,36 +22,36 @@
     <div class="brand">
       <div class="logo" aria-hidden="true">🛡️</div>
       <div class="brand-text">
-        <div class="brand-name">HostKeeper <span class="ver" id="ver">v1.0.5</span></div>
-        <div class="badge is-wait" id="badge"><span class="badge-emoji" id="badge-emoji">⏳</span><span id="badge-text">Loading…</span></div>
+        <div class="brand-name">HostKeeper <span class="ver" id="ver">v1.0.6</span></div>
+        <div class="badge is-wait" id="badge"><span class="badge-emoji" id="badge-emoji">⏳</span><span id="badge-text">加载中…</span></div>
       </div>
     </div>
-    <button class="icon-btn" id="theme-btn" type="button" aria-label="Switch to light theme">☀️</button>
+    <button class="icon-btn" id="theme-btn" type="button" aria-label="切换到浅色主题">☀️</button>
   </div>
   <div class="ribbon">
-    <nav class="ribbon-nav" id="ribbon-nav" aria-label="Sections">
-      <a class="chip" href="#lists">📋 Lists</a>
-      <a class="chip" href="#rules">🧩 Rules</a>
-      <a class="chip" href="#actions">⚡ Actions</a>
-      <a class="chip" href="#logs">📜 Logs</a>
+    <nav class="ribbon-nav" id="ribbon-nav" aria-label="页面分区">
+      <a class="chip" href="#lists">📋 列表</a>
+      <a class="chip" href="#rules">🧩 规则</a>
+      <a class="chip" href="#actions">⚡ 操作</a>
+      <a class="chip" href="#logs">📜 日志</a>
     </nav>
     <div class="ribbon-alert" id="ribbon-alert" hidden>
-      <span class="ribbon-text"><span class="rt-long" id="ribbon-long">🟡 Reboot to apply changes</span><span class="rt-short" id="ribbon-short">🟡 Reboot required</span></span>
-      <button class="btn btn-warn btn-xs" id="ribbon-btn" type="button">🔁 Reboot now</button>
+      <span class="ribbon-text"><span class="rt-long" id="ribbon-long">🟡 重启后生效</span><span class="rt-short" id="ribbon-short">🟡 需要重启</span></span>
+      <button class="btn btn-warn btn-xs" id="ribbon-btn" type="button">🔁 立即重启</button>
     </div>
   </div>
 </header>
 
 <main class="wrap">
-  <section class="hero glass" id="hero" aria-label="Protection overview">
+  <section class="hero glass" id="hero" aria-label="防护概览">
     <div class="hero-head">
       <div class="hero-head-text">
-        <span class="eyebrow">🛡️ Protection</span>
-        <span class="eyebrow-sub">The Zero-Bloat Digital Guardian</span>
+        <span class="eyebrow">🛡️ 防护</span>
+        <span class="eyebrow-sub">轻量无负担的数字守护者</span>
       </div>
       <div class="hero-power">
-        <span class="hero-power-state" id="toggle-state" aria-live="polite">Off</span>
-        <button class="switch" id="act-toggle" type="button" role="switch" aria-checked="false" aria-label="Enable blocking" title="Enable blocking"></button>
+        <span class="hero-power-state" id="toggle-state" aria-live="polite">关闭</span>
+        <button class="switch" id="act-toggle" type="button" role="switch" aria-checked="false" aria-label="开启拦截" title="开启拦截"></button>
       </div>
     </div>
     <div class="hero-num"><span id="hero-count"><span class="sk sk-num"></span></span></div>
@@ -59,11 +59,11 @@
     <div class="hero-list" id="hero-list"><span class="sk sk-line w-60"></span></div>
     <div class="stats">
       <div class="stat">
-        <div class="stat-k">🧩 Rules</div>
+        <div class="stat-k">🧩 规则</div>
         <div class="stat-v" id="stat-rules"><span class="sk sk-line w-70"></span></div>
       </div>
       <div class="stat">
-        <div class="stat-k">🕒 Updated</div>
+        <div class="stat-k">🕒 更新于</div>
         <div class="stat-v" id="stat-updated"><span class="sk sk-line w-70"></span></div>
       </div>
     </div>
@@ -73,118 +73,118 @@
 
   <section class="panel glass" id="lists" aria-labelledby="lists-title">
     <div class="panel-head">
-      <h2 id="lists-title">📋 Lists</h2>
-      <button class="btn btn-ghost btn-xs" id="lists-refresh" type="button">🔄 Refresh</button>
+      <h2 id="lists-title">📋 列表</h2>
+      <button class="btn btn-ghost btn-xs" id="lists-refresh" type="button">🔄 刷新</button>
     </div>
-    <p class="panel-note" id="lists-note">Pick a blocklist. Stronger lists block more, but can break more.</p>
-    <h3 class="group-title">🧬 Unified lists</h3>
+    <p class="panel-note" id="lists-note">选择一份拦截列表。越严格的列表拦截越多，也越可能影响正常使用。</p>
+    <h3 class="group-title">🧬 综合列表</h3>
     <div class="cards" id="group-unified">
       <article class="lcard is-skel"><div class="lc-top"><span class="sk sk-line w-50"></span><span class="sk sk-pill"></span></div><div class="lc-desc"><span class="sk sk-line w-90"></span><span class="sk sk-line w-70"></span></div><div class="lc-meta"><span class="sk sk-line w-40"></span><span class="sk sk-line w-30"></span></div><div class="lc-foot"><span></span><span class="sk sk-btn"></span></div></article>
       <article class="lcard is-skel"><div class="lc-top"><span class="sk sk-line w-50"></span><span class="sk sk-pill"></span></div><div class="lc-desc"><span class="sk sk-line w-90"></span><span class="sk sk-line w-70"></span></div><div class="lc-meta"><span class="sk sk-line w-40"></span><span class="sk sk-line w-30"></span></div><div class="lc-foot"><span></span><span class="sk sk-btn"></span></div></article>
     </div>
-    <h3 class="group-title">🎚️ HaGeZi <span class="group-sub">Light → Ultimate, gentle to strict</span></h3>
+    <h3 class="group-title">🎚️ HaGeZi <span class="group-sub">从轻量到终极，由宽松到严格</span></h3>
     <div class="cards" id="group-hagezi">
       <article class="lcard is-skel"><div class="lc-top"><span class="sk sk-line w-50"></span><span class="sk sk-pill"></span></div><div class="lc-desc"><span class="sk sk-line w-90"></span><span class="sk sk-line w-70"></span></div><div class="lc-meta"><span class="sk sk-line w-40"></span><span class="sk sk-line w-30"></span></div><div class="lc-foot"><span></span><span class="sk sk-btn"></span></div></article>
       <article class="lcard is-skel"><div class="lc-top"><span class="sk sk-line w-50"></span><span class="sk sk-pill"></span></div><div class="lc-desc"><span class="sk sk-line w-90"></span><span class="sk sk-line w-70"></span></div><div class="lc-meta"><span class="sk sk-line w-40"></span><span class="sk sk-line w-30"></span></div><div class="lc-foot"><span></span><span class="sk sk-btn"></span></div></article>
       <article class="lcard is-skel"><div class="lc-top"><span class="sk sk-line w-50"></span><span class="sk sk-pill"></span></div><div class="lc-desc"><span class="sk sk-line w-90"></span><span class="sk sk-line w-70"></span></div><div class="lc-meta"><span class="sk sk-line w-40"></span><span class="sk sk-line w-30"></span></div><div class="lc-foot"><span></span><span class="sk sk-btn"></span></div></article>
     </div>
 
-    <h3 class="group-title">➕ Add-ons <span class="group-sub">Stack extra lists on top of your main list</span></h3>
+    <h3 class="group-title">➕ 附加列表 <span class="group-sub">在主列表之上叠加额外列表</span></h3>
     <div class="addons" id="addons">
       <div class="arow is-skel"><span class="sk sk-ico"></span><span class="arow-text"><span class="sk sk-line w-50"></span><span class="sk sk-line w-90"></span></span><span class="sk sk-switch"></span></div>
       <div class="arow is-skel"><span class="sk sk-ico"></span><span class="arow-text"><span class="sk sk-line w-50"></span><span class="sk sk-line w-90"></span></span><span class="sk sk-switch"></span></div>
       <div class="arow is-skel"><span class="sk sk-ico"></span><span class="arow-text"><span class="sk sk-line w-50"></span><span class="sk sk-line w-90"></span></span><span class="sk sk-switch"></span></div>
     </div>
     <div class="addon-bar" id="addon-bar" hidden>
-      <span class="addon-bar-text" id="addon-bar-text">🧩 1 change</span>
-      <button class="btn btn-ghost btn-xs" id="addon-reset" type="button">↩️ Reset</button>
-      <button class="btn btn-primary btn-xs" id="addon-apply" type="button">✅ Apply</button>
+      <span class="addon-bar-text" id="addon-bar-text">🧩 1 项更改</span>
+      <button class="btn btn-ghost btn-xs" id="addon-reset" type="button">↩️ 重置</button>
+      <button class="btn btn-primary btn-xs" id="addon-apply" type="button">✅ 应用</button>
     </div>
   </section>
 
   <section class="panel glass" id="rules" aria-labelledby="rules-title">
     <div class="panel-head">
-      <h2 id="rules-title">🧩 Domain Rules</h2>
+      <h2 id="rules-title">🧩 域名规则</h2>
     </div>
-    <p class="panel-note">Always allow or always block a domain, on top of your lists.</p>
+    <p class="panel-note">在列表之上，始终放行或始终拦截某个域名。</p>
     <label class="field" for="rule-input">
-      <span class="sr-only">Domain or URL</span>
-      <input id="rule-input" type="text" inputmode="url" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="2048" placeholder="example.com or a full URL">
+      <span class="sr-only">域名或 URL</span>
+      <input id="rule-input" type="text" inputmode="url" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="2048" placeholder="example.com 或完整 URL">
     </label>
     <div class="field-msg" id="rule-msg" aria-live="polite"></div>
     <div class="row-2">
-      <button class="btn btn-allow" id="rule-allow" type="button">✅ Allow Domain</button>
-      <button class="btn btn-block" id="rule-block" type="button">⛔ Block Domain</button>
+      <button class="btn btn-allow" id="rule-allow" type="button">✅ 放行域名</button>
+      <button class="btn btn-block" id="rule-block" type="button">⛔ 拦截域名</button>
     </div>
-    <button class="btn btn-ghost btn-wide" id="rule-check" type="button">🔍 Check this domain</button>
+    <button class="btn btn-ghost btn-wide" id="rule-check" type="button">🔍 检查此域名</button>
     <div class="lookup" id="lookup" hidden></div>
-    <p class="tip">💡 Rules match that exact domain. To allow a domain together with all of its subdomains, start an allow rule with *. — for example *.example.com.</p>
-    <div class="seg" role="tablist" aria-label="Rule lists">
-      <button class="seg-btn is-on" id="tab-allow" type="button" role="tab" aria-selected="true">✅ Allowed <span class="seg-count" id="count-allow">0</span></button>
-      <button class="seg-btn" id="tab-block" type="button" role="tab" aria-selected="false">⛔ Blocked <span class="seg-count" id="count-block">0</span></button>
+    <p class="tip">💡 规则只匹配精确域名。若要连同所有子域一起放行，请以 *. 开头，例如 *.example.com。</p>
+    <div class="seg" role="tablist" aria-label="规则列表">
+      <button class="seg-btn is-on" id="tab-allow" type="button" role="tab" aria-selected="true">✅ 已放行 <span class="seg-count" id="count-allow">0</span></button>
+      <button class="seg-btn" id="tab-block" type="button" role="tab" aria-selected="false">⛔ 已拦截 <span class="seg-count" id="count-block">0</span></button>
     </div>
     <label class="field field-filter" for="rule-filter" id="rule-filter-wrap" hidden>
-      <span class="sr-only">Filter rules</span>
-      <input id="rule-filter" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="100" placeholder="🔎 Filter your rules">
+      <span class="sr-only">筛选规则</span>
+      <input id="rule-filter" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="100" placeholder="🔎 筛选规则">
     </label>
     <ul class="rule-list" id="rule-list" aria-live="polite"><li class="empty is-skel"><span class="sk sk-line w-50"></span></li></ul>
     <div class="row-2 rules-tools">
-      <button class="btn btn-ghost" id="rules-import" type="button">📥 Import rules</button>
-      <button class="btn btn-ghost" id="rules-export" type="button">📤 Export rules</button>
+      <button class="btn btn-ghost" id="rules-import" type="button">📥 导入规则</button>
+      <button class="btn btn-ghost" id="rules-export" type="button">📤 导出规则</button>
     </div>
   </section>
 
   <section class="panel glass" id="actions" aria-labelledby="actions-title">
     <div class="panel-head">
-      <h2 id="actions-title">⚡ Actions</h2>
+      <h2 id="actions-title">⚡ 操作</h2>
     </div>
     <div class="tiles">
-      <button class="tile" id="act-update" type="button"><span class="tile-emoji">🔄</span><span class="tile-label">Update Lists</span></button>
-      <button class="tile" id="act-status" type="button"><span class="tile-emoji">📊</span><span class="tile-label">Check Status</span></button>
-      <button class="tile" id="act-diag" type="button"><span class="tile-emoji">🩺</span><span class="tile-label">Health Check</span></button>
-      <button class="tile" id="act-settings" type="button"><span class="tile-emoji">⚙️</span><span class="tile-label">Settings</span></button>
-      <button class="tile" id="act-repair" type="button"><span class="tile-emoji">🛠️</span><span class="tile-label">Repair</span></button>
+      <button class="tile" id="act-update" type="button"><span class="tile-emoji">🔄</span><span class="tile-label">更新列表</span></button>
+      <button class="tile" id="act-status" type="button"><span class="tile-emoji">📊</span><span class="tile-label">检查状态</span></button>
+      <button class="tile" id="act-diag" type="button"><span class="tile-emoji">🩺</span><span class="tile-label">健康检查</span></button>
+      <button class="tile" id="act-settings" type="button"><span class="tile-emoji">⚙️</span><span class="tile-label">设置</span></button>
+      <button class="tile" id="act-repair" type="button"><span class="tile-emoji">🛠️</span><span class="tile-label">修复</span></button>
     </div>
-    <p class="panel-note tiles-note" id="actions-note">Updates only download when the source has changed.</p>
+    <p class="panel-note tiles-note" id="actions-note">仅当源列表发生变化时才会下载。</p>
   </section>
 
   <section class="panel glass" id="logs" aria-labelledby="logs-title">
     <div class="panel-head">
-      <h2 id="logs-title">📜 Logs</h2>
+      <h2 id="logs-title">📜 日志</h2>
       <div class="head-actions">
-        <button class="btn btn-ghost btn-xs" id="logs-refresh" type="button" aria-label="Refresh logs">🔄</button>
-        <button class="btn btn-ghost btn-xs" id="logs-copy" type="button" aria-label="Copy logs">📋</button>
-        <button class="btn btn-ghost btn-xs" id="logs-clear" type="button">🧹 Clear logs</button>
+        <button class="btn btn-ghost btn-xs" id="logs-refresh" type="button" aria-label="刷新日志">🔄</button>
+        <button class="btn btn-ghost btn-xs" id="logs-copy" type="button" aria-label="复制日志">📋</button>
+        <button class="btn btn-ghost btn-xs" id="logs-clear" type="button">🧹 清空日志</button>
       </div>
     </div>
-    <div class="filters" role="tablist" aria-label="Log filter">
-      <button class="filter is-on" type="button" role="tab" aria-selected="true" data-level="all">📜 All</button>
-      <button class="filter" type="button" role="tab" aria-selected="false" data-level="warn">⚠️ Warnings</button>
-      <button class="filter" type="button" role="tab" aria-selected="false" data-level="error">❌ Errors</button>
+    <div class="filters" role="tablist" aria-label="日志筛选">
+      <button class="filter is-on" type="button" role="tab" aria-selected="true" data-level="all">📜 全部</button>
+      <button class="filter" type="button" role="tab" aria-selected="false" data-level="warn">⚠️ 警告</button>
+      <button class="filter" type="button" role="tab" aria-selected="false" data-level="error">❌ 错误</button>
     </div>
-    <div class="logbox" id="logbox" tabindex="0" aria-label="Log entries"></div>
+    <div class="logbox" id="logbox" tabindex="0" aria-label="日志条目"></div>
   </section>
 
   <footer class="credits glass">
-    <h2>🙌 Credits</h2>
+    <h2>🙌 致谢</h2>
     <p class="credits-by">HostKeeper 自用版本。</p>
-    <h3 class="credits-sub">Blocklists &amp; typeface</h3>
+    <h3 class="credits-sub">拦截列表与字体</h3>
     <div class="credits-grid">
       <button class="btn btn-ghost" type="button" data-link="stevenblack">📋 StevenBlack</button>
       <button class="btn btn-ghost" type="button" data-link="hblock">📋 hBlock</button>
       <button class="btn btn-ghost" type="button" data-link="hagezi">📋 HaGeZi</button>
       <button class="btn btn-ghost" type="button" data-link="inter">🔤 Inter</button>
     </div>
-    <p class="credits-ver" id="credits-ver">HostKeeper v1.0.5 • 🔒 Local only • No telemetry • Inter (SIL OFL 1.1)</p>
+    <p class="credits-ver" id="credits-ver">HostKeeper v1.0.6 • 🔒 仅本地运行 • 无遥测 • Inter (SIL OFL 1.1)</p>
   </footer>
 </main>
 
 <div class="gate" id="gate" hidden>
   <div class="gate-card glass-strong">
     <div class="gate-icon" id="gate-icon">🔑</div>
-    <h2 id="gate-title">Secure session required</h2>
+    <h2 id="gate-title">需要安全会话</h2>
     <p id="gate-text"></p>
-    <button class="btn btn-primary" id="gate-retry" type="button">🔄 Try again</button>
+    <button class="btn btn-primary" id="gate-retry" type="button">🔄 重试</button>
   </div>
 </div>
 
@@ -200,12 +200,12 @@
 </div>
 
 <button class="mini glass-strong" id="mini" type="button" hidden>
-  <span class="mini-text" id="mini-text">⬇️ Working…</span>
+  <span class="mini-text" id="mini-text">⬇️ 处理中…</span>
   <span class="mini-bar"><span class="mini-fill" id="mini-fill"></span></span>
 </button>
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="app.js?v=1.0.5"></script>
+<script src="app.js?v=1.0.6"></script>
 </body>
 </html>

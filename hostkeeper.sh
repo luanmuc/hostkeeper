@@ -19,8 +19,8 @@ umask 022
 PATH=/system/bin:/system/xbin:/vendor/bin:${PATH:-/bin}
 export PATH
 
-HK_VER=v1.0.5
-HK_VCODE=6
+HK_VER=v1.0.6
+HK_VCODE=7
 SELF=$0
 case $SELF in /*) ;; *) SELF=$(pwd)/$SELF ;; esac
 MODDIR=${HK_MODDIR:-${SELF%/*}}
@@ -96,89 +96,89 @@ list_info() {
   L_KIND=base; L_GROUP=; L_LEVEL=; L_LEVELTXT=; L_ICON=; L_WARN=; L_MIN=1000; L_CUSTOM=0
   case $1 in
     stevenblack)
-      L_NAME='StevenBlack Main'; L_GROUP=unified; L_LEVEL=green; L_LEVELTXT=Balanced
+      L_NAME='StevenBlack Main'; L_GROUP=unified; L_LEVEL=green; L_LEVELTXT='均衡'
       L_URL="$STEVENBLACK_RAW/hosts"
-      L_DESC='Classic unified list for ads and malware, with very few false positives.' ;;
+      L_DESC='经典综合列表，拦截广告和恶意软件，误报非常少。' ;;
     hblock)
-      L_NAME='hBlock'; L_GROUP=unified; L_LEVEL=blue; L_LEVELTXT=Mixed
+      L_NAME='hBlock'; L_GROUP=unified; L_LEVEL=blue; L_LEVELTXT='混合'
       L_URL='https://hblock.molinero.dev/hosts'
-      L_DESC='Merges dozens of public blocklists into one broad, all-purpose list.' ;;
+      L_DESC='合并数十个公共拦截列表，形成一份覆盖面广的通用列表。' ;;
     hagezi-light)
-      L_NAME='HaGeZi Light'; L_GROUP=hagezi; L_LEVEL=green; L_LEVELTXT=Basic
+      L_NAME='HaGeZi Light'; L_GROUP=hagezi; L_LEVEL=green; L_LEVELTXT='基础'
       L_URL="$HAGEZI_RAW/light.txt"
-      L_DESC='Basic protection from ads, tracking and telemetry. Built to break nothing.' ;;
+      L_DESC='基础防护，拦截广告、追踪和遥测，尽量不影响正常使用。' ;;
     hagezi-normal)
-      L_NAME='HaGeZi Normal'; L_GROUP=hagezi; L_LEVEL=blue; L_LEVELTXT=All-round
+      L_NAME='HaGeZi Normal'; L_GROUP=hagezi; L_LEVEL=blue; L_LEVELTXT='全能'
       L_URL="$HAGEZI_RAW/multi.txt"
-      L_DESC='All-round protection from ads, tracking, phishing, malware and scams.' ;;
+      L_DESC='全能防护，拦截广告、追踪、钓鱼、恶意软件和诈骗。' ;;
     hagezi-pro)
-      L_NAME='HaGeZi Pro'; L_GROUP=hagezi; L_LEVEL=yellow; L_LEVELTXT=Extended
+      L_NAME='HaGeZi Pro'; L_GROUP=hagezi; L_LEVEL=yellow; L_LEVELTXT='增强'
       L_URL="$HAGEZI_RAW/pro.txt"
-      L_DESC='Extended protection with many more trackers. May need an allow rule.' ;;
+      L_DESC='增强防护，覆盖更多追踪器，可能需要添加放行规则。' ;;
     hagezi-proplus)
-      L_NAME='HaGeZi Pro++'; L_GROUP=hagezi; L_LEVEL=orange; L_LEVELTXT=Aggressive
+      L_NAME='HaGeZi Pro++'; L_GROUP=hagezi; L_LEVEL=orange; L_LEVELTXT='激进'
       L_URL="$HAGEZI_RAW/pro.plus.txt"
-      L_DESC='Aggressive blocking. Some legitimate sites or app features may break.' ;;
+      L_DESC='激进拦截，部分正常网站或应用功能可能受影响。' ;;
     hagezi-ultimate)
-      L_NAME='HaGeZi Ultimate'; L_GROUP=hagezi; L_LEVEL=red; L_LEVELTXT=Maximum
+      L_NAME='HaGeZi Ultimate'; L_GROUP=hagezi; L_LEVEL=red; L_LEVELTXT='极限'
       L_URL="$HAGEZI_RAW/ultimate.txt"
-      L_DESC='The most aggressive list. Can restrict app and website features.' ;;
+      L_DESC='最严格的列表，可能限制应用和网站功能。' ;;
     stevenblack-fakenews)
-      L_KIND=addon; L_GROUP=content; L_ICON='🗞️'; L_MIN=100; L_NAME='Fake news'
+      L_KIND=addon; L_GROUP=content; L_ICON='🗞️'; L_MIN=100; L_NAME='虚假新闻'
       L_URL="$STEVENBLACK_RAW/alternates/fakenews-only/hosts"
-      L_DESC='Sites known for publishing fabricated news stories.' ;;
+      L_DESC='已知发布虚假新闻内容的网站。' ;;
     stevenblack-gambling)
-      L_KIND=addon; L_GROUP=content; L_ICON='🎰'; L_MIN=100; L_NAME='Gambling'
+      L_KIND=addon; L_GROUP=content; L_ICON='🎰'; L_MIN=100; L_NAME='赌博'
       L_URL="$STEVENBLACK_RAW/alternates/gambling-only/hosts"
-      L_DESC='Online casinos, betting and lottery sites.' ;;
+      L_DESC='在线赌场、博彩和彩票网站。' ;;
     stevenblack-adult)
-      L_KIND=addon; L_GROUP=content; L_ICON='🔞'; L_MIN=1000; L_NAME='Adult content'
+      L_KIND=addon; L_GROUP=content; L_ICON='🔞'; L_MIN=1000; L_NAME='成人内容'
       L_URL="$STEVENBLACK_RAW/alternates/porn-only/hosts"
-      L_DESC='Pornography and other adult sites. A solid base for a family-safe device.' ;;
+      L_DESC='色情及其他成人网站，适合作为家庭安全设备的基础拦截。' ;;
     stevenblack-social)
-      L_KIND=addon; L_GROUP=content; L_ICON='👥'; L_MIN=100; L_WARN=breaks; L_NAME='Social networks'
+      L_KIND=addon; L_GROUP=content; L_ICON='👥'; L_MIN=100; L_WARN=breaks; L_NAME='社交网络'
       L_URL="$STEVENBLACK_RAW/alternates/social-only/hosts"
-      L_DESC='Blocks the social networks themselves, such as Facebook, Instagram and X.' ;;
+      L_DESC='拦截社交网络本身，例如 Facebook、Instagram 和 X。' ;;
     hagezi-doh)
-      L_KIND=addon; L_GROUP=security; L_ICON='🔐'; L_MIN=100; L_WARN=dns; L_NAME='Encrypted DNS bypass'
+      L_KIND=addon; L_GROUP=security; L_ICON='🔐'; L_MIN=100; L_WARN=dns; L_NAME='加密 DNS 绕过'
       L_URL="$HAGEZI_RAW/doh.txt"
-      L_DESC='Blocks public DNS-over-HTTPS servers so apps can’t sidestep your hosts file.' ;;
+      L_DESC='拦截公共 DNS-over-HTTPS 服务器，防止应用绕过 hosts 文件。' ;;
     hagezi-tif)
-      L_KIND=addon; L_GROUP=security; L_ICON='🦠'; L_MIN=1000; L_WARN=heavy; L_NAME='Threat Intelligence'
+      L_KIND=addon; L_GROUP=security; L_ICON='🦠'; L_MIN=1000; L_WARN=heavy; L_NAME='威胁情报'
       L_URL="$HAGEZI_RAW/tif.txt"
-      L_DESC='Malware, phishing and scam domains. Very large, with over a million entries.' ;;
+      L_DESC='恶意软件、钓鱼和诈骗域名，体积很大，超过一百万条。' ;;
     hagezi-xiaomi)
       L_KIND=addon; L_GROUP=tracker; L_ICON='📱'; L_MIN=20; L_NAME='Xiaomi'
       L_URL="$HAGEZI_RAW/native.xiaomi.txt"
-      L_DESC='Telemetry and ad domains built into Xiaomi, Redmi and POCO devices.' ;;
+      L_DESC='小米、Redmi 和 POCO 设备内置的遥测与广告域名。' ;;
     hagezi-samsung)
       L_KIND=addon; L_GROUP=tracker; L_ICON='📱'; L_MIN=20; L_NAME='Samsung'
       L_URL="$HAGEZI_RAW/native.samsung.txt"
-      L_DESC='Telemetry and ad domains built into Samsung devices.' ;;
+      L_DESC='三星设备内置的遥测与广告域名。' ;;
     hagezi-huawei)
       L_KIND=addon; L_GROUP=tracker; L_ICON='📱'; L_MIN=20; L_NAME='Huawei'
       L_URL="$HAGEZI_RAW/native.huawei.txt"
-      L_DESC='Telemetry and ad domains built into Huawei and Honor devices.' ;;
+      L_DESC='华为和荣耀设备内置的遥测与广告域名。' ;;
     hagezi-oppo)
       L_KIND=addon; L_GROUP=tracker; L_ICON='📱'; L_MIN=20; L_NAME='OPPO & Realme'
       L_URL="$HAGEZI_RAW/native.oppo-realme.txt"
-      L_DESC='Telemetry and ad domains built into OPPO, Realme and OnePlus devices.' ;;
+      L_DESC='OPPO、Realme 和一加设备内置的遥测与广告域名。' ;;
     hagezi-vivo)
       L_KIND=addon; L_GROUP=tracker; L_ICON='📱'; L_MIN=20; L_NAME='Vivo'
       L_URL="$HAGEZI_RAW/native.vivo.txt"
-      L_DESC='Telemetry and ad domains built into Vivo and iQOO devices.' ;;
+      L_DESC='Vivo 和 iQOO 设备内置的遥测与广告域名。' ;;
     hagezi-amazon)
       L_KIND=addon; L_GROUP=tracker; L_ICON='📦'; L_MIN=20; L_NAME='Amazon'
       L_URL="$HAGEZI_RAW/native.amazon.txt"
-      L_DESC='Tracking built into Amazon devices and apps.' ;;
+      L_DESC='亚马逊设备和应用内置的追踪。' ;;
     hagezi-tiktok)
       L_KIND=addon; L_GROUP=tracker; L_ICON='🎵'; L_MIN=20; L_NAME='TikTok'
       L_URL="$HAGEZI_RAW/native.tiktok.txt"
-      L_DESC='Tracking and fingerprinting domains used by TikTok.' ;;
+      L_DESC='TikTok 使用的追踪和指纹识别域名。' ;;
     hagezi-microsoft)
       L_KIND=addon; L_GROUP=tracker; L_ICON='🪟'; L_MIN=20; L_NAME='Microsoft'
       L_URL="$HAGEZI_RAW/native.winoffice.txt"
-      L_DESC='Telemetry from Windows, Office and other Microsoft apps.' ;;
+      L_DESC='Windows、Office 及其他微软应用的遥测。' ;;
     c-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])
       custom_info "$1" || return 1 ;;
     *) return 1 ;;
@@ -781,7 +781,7 @@ migrate_data() {
     ln "$OLDCACHE" "$LISTSD/$C_LIST.domains" 2>/dev/null || cp -f "$OLDCACHE" "$LISTSD/$C_LIST.domains" 2>/dev/null
     if [ -s "$LISTSD/$C_LIST.domains" ]; then
       src_write "$LISTSD/$C_LIST.info" "${C_ETAG#W/}" "$C_SRCDATE" "$C_COUNT" 0
-      log INFO "Migrated the cached list from the v1 layout"
+      log INFO "已将缓存列表从 v1 布局迁移完成"
     fi
   fi
   [ "${1:-}" = keep ] || rm -f "$OLDCACHE"
@@ -847,7 +847,7 @@ lock_drop_if_mine() { [ "$(lock_pid "$1")" = "$$" ] && rm -rf "$1" 2>/dev/null; 
 lock_drop() { lock_drop_if_mine "$1"; }
 lock_clear_stale() { lock_alive "$1" || rm -rf "$1" 2>/dev/null; return 0; }
 
-busy_reply() { reply false busy '⏳ Another task is still running. Please wait until it finishes.'; }
+busy_reply() { reply false busy '⏳ 另一个任务仍在运行，请等待它完成。'; }
 
 op_load() {
   OP_KIND=; OP_LIST=; OP_PHASE=; OP_STATE=; OP_CODE=; OP_MSG=; OP_SEQ=0; OP_START=0; OP_END=0; OP_TOTAL=0
@@ -922,7 +922,7 @@ op_reconcile() {
   lock_alive "$LOCKD" && return 0
   op_interrupt '⚠️ The last task was interrupted. Your hosts file is intact — run it again to finish.'
   lock_clear_stale "$LOCKD"
-  log WARN "A background task stopped unexpectedly; its state was reset"
+  log WARN "后台任务意外停止，状态已重置"
 }
 
 op_json() {
@@ -978,7 +978,7 @@ spawn() {
   kill_tree "$_sp_p"
   wait "$_sp_p" 2>/dev/null
   rm -f "$_sp_mark"
-  log ERROR "Background worker $* did not report readiness; terminated pid $_sp_p"
+  log ERROR "后台工作进程 $* 未报告就绪，已终止进程 $_sp_p"
   return 1
 }
 
@@ -1093,10 +1093,10 @@ dl_get() {
 dl_reason() {
   case $DL_FAIL in
     http) printf 'HTTP %s' "$DL_CODE" ;;
-    insecure) printf 'an insecure redirect was refused' ;;
-    toolarge) printf 'the file is larger than %s MB' "$((MAX_BYTES / 1048576))" ;;
-    incomplete) printf 'transfer interrupted%s' "${DL_ERR:+ ($DL_ERR)}" ;;
-    *) printf 'no connection%s' "${DL_ERR:+ ($DL_ERR)}" ;;
+    insecure) printf '拒绝了不安全的跳转' ;;
+    toolarge) printf '文件超过 %s MB' "$((MAX_BYTES / 1048576))" ;;
+    incomplete) printf '传输中断%s' "${DL_ERR:+ ($DL_ERR)}" ;;
+    *) printf '无法连接%s' "${DL_ERR:+ ($DL_ERR)}" ;;
   esac
 }
 
@@ -1111,7 +1111,7 @@ dl_fetch() {
     esac
     [ "$_df_t" -ge 3 ] && return 1
     cancel_requested && return 1
-    [ "$MODE" = install ] || log WARN "Download attempt $_df_t failed: $(dl_reason). Retrying"
+    [ "$MODE" = install ] || log WARN "第 $_df_t 次下载尝试失败：$(dl_reason)，正在重试"
     nap $((_df_t * 2))
     cancel_requested && return 1
     _df_t=$((_df_t + 1))
@@ -1296,7 +1296,7 @@ stage_commit() {
   if [ "$_stc_ok" != 1 ]; then
     rm -rf "$CACHED"
     if ! mv -f "$_stc_prev" "$CACHED" 2>/dev/null; then
-      log ERROR "Cache rollback failed; previous cache kept at $_stc_prev"
+      log ERROR "缓存回滚失败，已保留之前的缓存于 $_stc_prev"
       return 1
     fi
     return 1
@@ -1408,13 +1408,13 @@ restore_backup() {
     hosts_sane "$HOSTSD/.hosts.hkrestore" || continue
     if put_hosts "$HOSTSD/.hosts.hkrestore" inplace; then
       rm -f "$SUMF"
-      log WARN "Restored the previous hosts file from backup $_rb"
+      log WARN "已从备份 $_rb 恢复之前的 hosts 文件"
       return 0
     fi
   done
   rm -f "$HOSTSD/.hosts.hkrestore"
   write_clean_hosts
-  log ERROR "No usable backup was found; wrote a clean localhost-only hosts file"
+  log ERROR "未找到可用备份，已写入仅含 localhost 的干净 hosts 文件"
   return 1
 }
 
@@ -1452,7 +1452,7 @@ install_hosts() {
     return 1
   fi
   if ! verify_hosts "$2"; then
-    log ERROR "The new hosts file failed verification"
+    log ERROR "新的 hosts 文件校验失败"
     restore_backup
     return 2
   fi
@@ -1486,7 +1486,7 @@ repair_hosts() {
     if [ $? -eq 0 ] && verify_hosts_deep "$C_DOMAINS"; then
       return 0
     fi
-    log WARN "The hosts file is incomplete or doesn’t match its checksum; rebuilding it"
+    log WARN "hosts 文件不完整或校验和不匹配，正在重建"
   fi
   mkdir -p "$HOSTSD"
   rm -f "$HOSTSD/.hosts.hknew"
@@ -1503,7 +1503,7 @@ repair_hosts() {
       cfg_save
       stats_commit
       sum_record "$CH_COUNT"
-      log WARN "The hosts file was missing or damaged; rebuilt it from the cached lists"
+      log WARN "hosts 文件缺失或损坏，已使用缓存列表重建"
       return 0
     fi
   fi
@@ -1512,14 +1512,14 @@ repair_hosts() {
     C_DOMAINS=0
     [ "$C_ENABLED" = 1 ] && C_SETUP=pending
     cfg_save
-    log WARN "The hosts file was missing or damaged; wrote a clean localhost-only file"
+    log WARN "hosts 文件缺失或损坏，已写入仅含 localhost 的干净文件"
     return 0
   fi
   C_DOMAINS=0
   [ "$C_ENABLED" = 1 ] && C_SETUP=pending
   cfg_save
   rm -f "$SUMF"
-  log ERROR "The hosts file was missing or damaged, and a clean fallback could not be written"
+  log ERROR "hosts 文件缺失或损坏，且无法写入干净的兜底文件"
   return 1
 }
 
@@ -1577,18 +1577,18 @@ ensure_mounted() {
   conflicts_scan
   if [ -n "$R_CONF" ]; then
     [ "${1:-}" = quiet ] && return 1
-    [ "$R_MOUNT" = conflict ] || log WARN "Another module also replaces /system/etc/hosts ($R_CONF), so HostKeeper left it alone"
+    [ "$R_MOUNT" = conflict ] || log WARN "另一个模块也替换了 /system/etc/hosts（$R_CONF），HostKeeper 未改动它"
     mount_record conflict
     return 1
   fi
   set_hosts_perm "$HOSTS"
   if bind_hosts && hosts_live; then
     mount_record self
-    log INFO "The root manager didn’t apply HostKeeper’s hosts file, so HostKeeper mounted it directly"
+    log INFO "Root 管理器未应用 HostKeeper 的 hosts 文件，已由 HostKeeper 直接挂载"
     return 0
   fi
   [ "${1:-}" = quiet ] && return 1
-  [ "$R_MOUNT" = failed ] || log ERROR "Couldn’t mount the hosts file onto /system/etc/hosts"
+  [ "$R_MOUNT" = failed ] || log ERROR "无法将 hosts 文件挂载到 /system/etc/hosts"
   mount_record failed
   return 1
 }
@@ -1634,7 +1634,7 @@ applied_state() {
 describe() {
   cfg_load
   case $C_SETUP in
-    pending) R_DESC="🛡️ ⏳ Setup pending • $L_NAME downloads automatically once you are online"; return 0 ;;
+    pending) R_DESC="🛡️ ⏳ 等待初始化 • 联网后会自动下载 $L_NAME"; return 0 ;;
     failed) R_DESC='🛡️ ❌ Setup incomplete • Open the WebUI and tap Download now to finish setup'; return 0 ;;
   esac
   applied_state
@@ -1645,18 +1645,18 @@ describe() {
   fi
   if [ "$R_APPLIED" = pending ]; then
     if [ "$C_ENABLED" = 1 ]; then
-      R_DESC="🛡️ 🟡 Reboot required • $L_NAME$_ds_x • $(fmt_num "$C_DOMAINS") domains ready"
+      R_DESC="🛡️ 🟡 需要重启 • $L_NAME$_ds_x • 已就绪 $(fmt_num "$C_DOMAINS") 个域名"
     else
       R_DESC='🛡️ 🟡 Reboot required • Blocking will be turned off'
     fi
   elif [ "$C_ENABLED" != 1 ]; then
-    R_DESC="🛡️ 🔴 Disabled • $L_NAME is paused"
+    R_DESC="🛡️ 🔴 已停用 • $L_NAME 已暂停"
   elif [ "$R_APPLIED" = overridden ]; then
     R_DESC='🛡️ ⚠️ Overridden • Another module replaces /system/etc/hosts'
   elif [ "$R_APPLIED" = inactive ]; then
-    R_DESC="🛡️ 🔴 Not active • Reboot to activate $L_NAME"
+    R_DESC="🛡️ 🔴 未生效 • 重启后激活 $L_NAME"
   else
-    R_DESC="🛡️ 🟢 Active • $L_NAME$_ds_x • $(fmt_num "$C_DOMAINS") domains blocked"
+    R_DESC="🛡️ 🟢 已启用 • $L_NAME$_ds_x • 已拦截 $(fmt_num "$C_DOMAINS") 个域名"
   fi
 }
 
@@ -1679,7 +1679,7 @@ flush_dns() {
       case $(/system/bin/ndc resolver flushnet "$_fd_id" 2>&1) in 200*) _fd="${_fd:+$_fd, }flushnet $_fd_id" ;; esac
     done
   fi
-  [ -n "$_fd" ] && log INFO "DNS cache flushed ($_fd)"
+  [ -n "$_fd" ] && log INFO "DNS 缓存已刷新（$_fd）"
   return 0
 }
 
@@ -1801,7 +1801,7 @@ meta_fetch_one() {
     meta_save "$1" '' '' '' no_downloader ''
   elif ! dl_fetch "$L_URL" "$_mf_b" "$_mf_h" peek; then
     meta_save "$1" '' '' '' "${DL_FAIL:-network}" ''
-    log WARN "Could not fetch details for $L_NAME: $(dl_reason)"
+    log WARN "无法获取 $L_NAME 的详情：$(dl_reason)"
   else
     head_info "$_mf_b"
     _mf_c=$HI_COUNT
@@ -1832,7 +1832,7 @@ meta_fetch_one() {
       meta_save "$1" '' "$(date_epoch "$_mf_d")" "$_mf_d" '' "$_mf_s"
     else
       meta_save "$1" '' "$(date_epoch "$_mf_d")" "$_mf_d" count_unavailable "$_mf_s"
-      log WARN "Could not determine the entry count of $L_NAME"
+      log WARN "无法确定 $L_NAME 的条目数量"
     fi
   fi
   rm -f "$_mf_b" "$_mf_h" "$_mf_h.err" "$METAD/$1.busy"
@@ -1941,18 +1941,18 @@ addon_item_json() {
 pl_set() { PL_CODE=$1; PL_MSG=$2; }
 
 pl_cancelled() {
-  pl_set cancelled '✖️ Cancelled. Nothing was changed.'
-  log INFO "Cancelled by the user; nothing was changed"
+  pl_set cancelled '✖️ 已取消，未做任何更改。'
+  log INFO "用户已取消，未做任何更改"
 }
 
 pl_download_error() {
   case $DL_FAIL in
-    http) pl_set http_error "🌐 The list server answered with HTTP $DL_CODE for $FS_NAME. Nothing was changed — please try again later." ;;
-    toolarge) pl_set too_large "🐘 $FS_NAME is larger than $((MAX_BYTES / 1048576)) MB, so it was not downloaded. Nothing was changed." ;;
-    incomplete) pl_set download_interrupted "✂️ The download of $FS_NAME was interrupted. Nothing was changed — please try again." ;;
-    *) pl_set network_error "🌐 Couldn’t reach the list server. Check your connection and try again." ;;
+    http) pl_set http_error "🌐 列表服务器对 $FS_NAME 返回 HTTP $DL_CODE，未做任何更改，请稍后重试。" ;;
+    toolarge) pl_set too_large "🐘 $FS_NAME 超过 $((MAX_BYTES / 1048576)) MB，未下载，未做任何更改。" ;;
+    incomplete) pl_set download_interrupted "✂️ $FS_NAME 下载中断，未做任何更改，请重试。" ;;
+    *) pl_set network_error "🌐 无法连接列表服务器，请检查网络后重试。" ;;
   esac
-  log ERROR "Download of $FS_NAME failed: $(dl_reason)"
+  log ERROR "$FS_NAME 下载失败：$(dl_reason)"
 }
 
 pl_cleanup() {
@@ -1973,8 +1973,8 @@ fetch_source() {
   OP_TOTAL=0
   op_phase check
   if [ "$2" = check ]; then
-    say "🔎 Checking $FS_NAME for updates…"
-    log INFO "Checking $FS_NAME for updates"
+    say "🔎 正在检查 $FS_NAME 的更新…"
+    log INFO "正在检查 $FS_NAME 的更新"
   fi
   _fs_et=; _fs_sd=; _fs_hc=; _fs_total=; _fs_have=0
   if dl_fetch "$_fs_url" "$TMPD/peek.body" "$TMPD/peek.hdr" peek; then
@@ -1999,7 +1999,7 @@ fetch_source() {
     fi
     if [ "$_fs_same" = 1 ]; then
       rm -f "$TMPD/peek.body" "$TMPD/peek.hdr"
-      log INFO "$FS_NAME is already up to date"
+      log INFO "$FS_NAME 已是最新版本"
       return 2
     fi
   fi
@@ -2012,15 +2012,15 @@ fetch_source() {
   fi
   _fs_free=$(free_kb "$DATA")
   if is_num "$_fs_free" && [ "$_fs_free" -lt "$_fs_need" ]; then
-    pl_set no_space "💾 Not enough free storage. About $((_fs_need / 1024)) MB is needed, $((_fs_free / 1024)) MB is available."
-    log ERROR "Not enough free storage: need ${_fs_need} KB, ${_fs_free} KB available"
+    pl_set no_space "💾 可用存储空间不足：需要约 $((_fs_need / 1024)) MB，当前可用 $((_fs_free / 1024)) MB。"
+    log ERROR "存储空间不足：需要 ${_fs_need} KB，当前可用 ${_fs_free} KB"
     return 1
   fi
 
   OP_TOTAL=${_fs_total:-0}
   op_phase download
-  say "⬇️ Downloading $FS_NAME…"
-  log INFO "Downloading $FS_NAME"
+  say "⬇️ 正在下载 $FS_NAME…"
+  log INFO "正在下载 $FS_NAME"
   if [ "$_fs_have" = 1 ]; then
     mv -f "$TMPD/peek.body" "$DLPART"
     mv -f "$TMPD/peek.hdr" "$DLHDR"
@@ -2050,18 +2050,18 @@ fetch_source() {
   op_phase verify
   _fs_size=$(fsize "$DLPART")
   if [ "$_fs_code" != 200 ]; then
-    pl_set http_error "🌐 The list server answered with HTTP $_fs_code instead of the list. Nothing was changed."
-    log ERROR "Unexpected HTTP status $_fs_code for $FS_NAME"
+    pl_set http_error "🌐 列表服务器返回 HTTP $_fs_code，而不是有效列表，未做任何更改。"
+    log ERROR "$FS_NAME 返回意外的 HTTP 状态码 $_fs_code"
     return 1
   fi
   if [ "$_fs_size" -eq 0 ]; then
-    pl_set empty_file "📭 The server sent an empty file for $FS_NAME. Nothing was changed."
-    log ERROR "Downloaded file for $FS_NAME was empty"
+    pl_set empty_file "📭 服务器返回的空文件（$FS_NAME），未做任何更改。"
+    log ERROR "$FS_NAME 的下载文件为空"
     return 1
   fi
   if looks_html "$DLPART"; then
-    pl_set html_page '🧱 The server sent a web page instead of a hosts list. Nothing was changed.'
-    log ERROR "Downloaded file for $FS_NAME was an HTML page"
+    pl_set html_page '🧱 服务器返回的是网页而不是 hosts 列表，未做任何更改。'
+    log ERROR "$FS_NAME 的下载内容是 HTML 页面"
     return 1
   fi
   _fs_want=
@@ -2075,11 +2075,11 @@ fetch_source() {
     _fs_want=$_fs_total
   fi
   if [ -n "$_fs_want" ] && [ "$_fs_want" != "$_fs_size" ]; then
-    pl_set size_mismatch "✂️ The download was incomplete ($(fmt_mb "$_fs_size") of $(fmt_mb "$_fs_want")). Nothing was changed."
-    log ERROR "Incomplete download for $FS_NAME: $_fs_size of $_fs_want bytes"
+    pl_set size_mismatch "✂️ 下载不完整（已下载 $(fmt_mb "$_fs_size")，应为 $(fmt_mb "$_fs_want")），未做任何更改。"
+    log ERROR "$FS_NAME 下载不完整：已下载 $_fs_size / $_fs_want 字节"
     return 1
   fi
-  say "✅ Downloaded $(fmt_mb "$_fs_size")"
+  say "✅ 已下载 $(fmt_mb "$_fs_size")"
   if [ -z "$_fs_hc" ] || [ -z "$_fs_sd" ]; then
     head_info "$DLPART"
     [ -n "$_fs_hc" ] || _fs_hc=$HI_COUNT
@@ -2088,19 +2088,19 @@ fetch_source() {
   cancel_requested && return 3
 
   op_phase optimize
-  say "🧹 Cleaning and optimizing entries…"
+  say "🧹 正在清理并优化条目…"
   rm -f "$TMPD/norm.count"
   mkdir -p "$STAGED"
   if ! awk -v cntf="$TMPD/norm.count" "$AWK_NORM" "$DLPART" > "$STAGED/$_fs_id.domains.tmp" 2>/dev/null; then
     rm -f "$STAGED/$_fs_id.domains.tmp"
-    pl_set process_failed "❌ $FS_NAME could not be processed. Nothing was changed."
-    log ERROR "Processing $FS_NAME failed"
+    pl_set process_failed "❌ 无法处理 $FS_NAME，未做任何更改。"
+    log ERROR "$FS_NAME 处理失败"
     return 1
   fi
   mv -f "$STAGED/$_fs_id.domains.tmp" "$STAGED/$_fs_id.domains" 2>/dev/null || {
     rm -f "$STAGED/$_fs_id.domains.tmp"
-    pl_set write_failed "❌ Couldn’t stage $FS_NAME. Nothing was changed."
-    log ERROR "Could not stage $FS_NAME"
+    pl_set write_failed "❌ 无法暂存 $FS_NAME，未做任何更改。"
+    log ERROR "无法暂存 $FS_NAME"
     return 1
   }
   _fs_n=0
@@ -2109,15 +2109,15 @@ fetch_source() {
   rm -f "$DLPART" "$DLHDR" "$TMPD/norm.count"
   if [ "$_fs_n" -lt "$_fs_min" ]; then
     rm -f "$STAGED/$_fs_id.domains"
-    pl_set too_few_entries "📉 Only $(fmt_num "$_fs_n") valid entries were found in $FS_NAME (at least $(fmt_num "$_fs_min") are required). Nothing was changed."
-    log ERROR "$FS_NAME had only $_fs_n valid entries"
+    pl_set too_few_entries "📉 $FS_NAME 仅找到 $(fmt_num "$_fs_n") 条有效记录（至少需要 $(fmt_num "$_fs_min") 条），未做任何更改。"
+    log ERROR "$FS_NAME 仅有 $_fs_n 条有效记录"
     return 1
   fi
-  say "✅ Verified $(fmt_num "$_fs_n") unique domains"
+  say "✅ 已校验 $(fmt_num "$_fs_n") 个唯一域名"
   if ! src_write "$STAGED/$_fs_id.info" "$_fs_et" "$_fs_sd" "$_fs_n" "$_fs_size"; then
     rm -f "$STAGED/$_fs_id.domains" "$STAGED/$_fs_id.info"
-    pl_set write_failed "❌ Couldn’t save metadata for $FS_NAME. Nothing was changed."
-    log ERROR "Could not save source metadata for $FS_NAME"
+    pl_set write_failed "❌ 无法保存 $FS_NAME 的源元数据，未做任何更改。"
+    log ERROR "无法保存 $FS_NAME 的源元数据"
     return 1
   fi
   meta_save "$_fs_id" "${_fs_hc:-$_fs_n}" "$(date_epoch "$_fs_sd")" "$_fs_sd" '' "$_fs_size"
@@ -2128,7 +2128,7 @@ fetch_source() {
 pipeline() {
   PL_KIND=$1; PL_BASE=$2; PL_CODE=; PL_MSG=; PL_REBOOT=0; PL_LIVE=0; PL_DOMAINS=0; PL_WARN=0
   if ! list_info "$PL_BASE" || [ "$L_KIND" != base ]; then
-    pl_set invalid_list '❌ Unknown list.'
+    pl_set invalid_list '❌ 未知列表。'
     return 1
   fi
   PL_NAME=$L_NAME
@@ -2156,8 +2156,8 @@ pipeline() {
   done
   OP_ITEMS=$_pl_items
   if [ "$_pl_items" -gt 0 ] && ! dl_detect; then
-    pl_set no_downloader '❌ No downloader available. HostKeeper needs curl or BusyBox wget with HTTPS support.'
-    log ERROR "No downloader available (curl or BusyBox wget)"
+    pl_set no_downloader '❌ 没有可用的下载器。HostKeeper 需要支持 HTTPS 的 curl 或 BusyBox wget。'
+    log ERROR "没有可用的下载工具（curl 或 BusyBox wget）"
     pl_cleanup
     return 1
   fi
@@ -2181,7 +2181,7 @@ pipeline() {
         if [ "$_pl_id" != "$PL_BASE" ] && src_ready "$_pl_id"; then
           PL_WARN=$((PL_WARN + 1))
           rm -f "$STAGED/$_pl_id.domains" "$STAGED/$_pl_id.info"
-          log WARN "$FS_NAME couldn’t be refreshed; its previous version stays in use"
+          log WARN "$FS_NAME 刷新失败，继续使用上一版本"
         else
           pl_cleanup
           return 1
@@ -2203,8 +2203,8 @@ pipeline() {
         C_CHECKED=$(now)
         cfg_save
         PL_DOMAINS=$C_DOMAINS
-        pl_set up_to_date "✅ Already up to date — nothing has changed since your last update."
-        log INFO "Everything is already up to date"
+        pl_set up_to_date "✅ 已是最新版本，自上次更新以来没有变化。"
+        log INFO "所有内容都已是最新版本"
         pl_cleanup
         return 0
       fi
@@ -2216,8 +2216,8 @@ pipeline() {
   C_LIST=$PL_BASE
   C_ADDONS=$PL_ADDONS
   if ! merge_sources "$STAGED" || ! compile_into "$HOSTSD/.hosts.hknew" "$C_ENABLED"; then
-    pl_set write_failed "❌ Couldn’t build the new hosts file. Nothing was changed."
-    log ERROR "Could not build the hosts file for $PL_NAME"
+    pl_set write_failed "❌ 无法构建新的 hosts 文件，未做任何更改。"
+    log ERROR "无法为 $PL_NAME 构建 hosts 文件"
     pl_cleanup
     return 1
   fi
@@ -2231,21 +2231,21 @@ pipeline() {
   done
   if [ "$_pl_stage_bad" = 1 ] || ! stage_commit; then
     rm -f "$HOSTSD/.hosts.hknew"
-    pl_set write_failed "❌ Couldn’t commit the downloaded cache. Nothing was changed."
-    log ERROR "Could not commit the downloaded cache for $PL_NAME"
+    pl_set write_failed "❌ 无法提交下载的缓存，未做任何更改。"
+    log ERROR "无法提交 $PL_NAME 的下载缓存"
     pl_cleanup
     return 1
   fi
   install_hosts "$HOSTSD/.hosts.hknew" "$CH_COUNT" backup
   case $? in
     1)
-      pl_set write_failed "❌ Couldn’t write the hosts file. Your previous hosts file was restored."
-      log ERROR "Could not write the hosts file for $PL_NAME"
+      pl_set write_failed "❌ 无法写入 hosts 文件，已恢复之前的 hosts 文件。"
+      log ERROR "无法写入 $PL_NAME 的 hosts 文件"
       pl_cleanup
       return 1
       ;;
     2)
-      pl_set verify_failed '❌ The new hosts file failed verification. Your previous hosts file was restored.'
+      pl_set verify_failed '❌ 新的 hosts 文件校验失败，已恢复之前的 hosts 文件。'
       pl_cleanup
       return 1
       ;;
@@ -2266,44 +2266,44 @@ pipeline() {
   _pl_n=$(fmt_num "$CH_COUNT")
   if [ "$_pl_enabled" != 1 ]; then
     _pl_code=disabled
-    _pl_msg="✅ Blocklist sources are ready; blocking remains disabled."
+    _pl_msg="✅ 拦截列表源已就绪，拦截仍处于关闭状态。"
     if [ "$IH_CHANGED" = 1 ] && ! settle_change; then
       PL_REBOOT=1
     fi
   else
     case $PL_KIND in
-      update | auto) _pl_msg="✅ $PL_NAME updated — $_pl_n domains." ;;
-      enable) _pl_msg="🟢 Blocking is back on with $PL_NAME — $_pl_n domains." ;;
-      addons) _pl_msg="✅ Add-ons updated — $_pl_n domains." ;;
-      *) _pl_msg="✅ $PL_NAME is ready — $_pl_n domains." ;;
+      update | auto) _pl_msg="✅ $PL_NAME 已更新，共 $_pl_n 个域名。" ;;
+      enable) _pl_msg="🟢 已使用 $PL_NAME 重新开启拦截，共 $_pl_n 个域名。" ;;
+      addons) _pl_msg="✅ 附加列表已更新，共 $_pl_n 个域名。" ;;
+      *) _pl_msg="✅ $PL_NAME 已就绪，共 $_pl_n 个域名。" ;;
     esac
     if [ "$IH_CHANGED" = 1 ]; then
       if settle_change; then
         PL_LIVE=1
-        _pl_msg="$_pl_msg Active now — no reboot needed."
+        _pl_msg="$_pl_msg 已立即生效，无需重启。"
       else
         PL_REBOOT=1
-        _pl_msg="$_pl_msg Reboot to activate it."
+        _pl_msg="$_pl_msg 重启后生效。"
       fi
       _pl_code=applied
     else
       if settle_change; then
         PL_LIVE=1
-        _pl_msg="✅ $PL_NAME is up to date — the hosts file didn’t change."
+        _pl_msg="✅ $PL_NAME 已是最新版本，hosts 文件未变化。"
       else
         PL_REBOOT=1
-        _pl_msg="✅ $PL_NAME is up to date — reboot to restore live blocking."
+        _pl_msg="✅ $PL_NAME 已是最新版本，重启后恢复即时拦截。"
       fi
       _pl_code=unchanged
     fi
   fi
   if [ "$PL_WARN" -gt 0 ]; then
-    _pl_msg="$_pl_msg ⚠️ $PL_WARN $(plural "$PL_WARN" add-on add-ons) couldn’t be refreshed and kept the previous version."
+    _pl_msg="$_pl_msg ⚠️ $PL_WARN 个附加列表刷新失败，已保留上一版本。"
   fi
   set_description
   pl_set "$_pl_code" "$_pl_msg"
   set -- $PL_ADDONS
-  log INFO "$PL_NAME installed with $# $(plural "$#" add-on add-ons): $_pl_n domains$( [ "$PL_LIVE" = 1 ] && printf ', applied live')$( [ "$PL_REBOOT" = 1 ] && printf ', reboot required')"
+  log INFO "$PL_NAME 安装完成，包含 $# 个附加列表，共 $_pl_n 个域名$( [ "$PL_LIVE" = 1 ] && printf '，已即时生效')$( [ "$PL_REBOOT" = 1 ] && printf '，需要重启')"
   pl_cleanup
   return 0
 }
@@ -2336,8 +2336,8 @@ rebuild() {
 
 change_note() {
   if [ "$RB_CHANGED" != 1 ]; then R_NOTE=
-  elif [ "$RB_LIVE" = 1 ]; then R_NOTE=' Active now.'
-  else R_NOTE=' Reboot to apply.'
+  elif [ "$RB_LIVE" = 1 ]; then R_NOTE=' 当前已生效。'
+  else R_NOTE=' 重启后生效。'
   fi
 }
 
@@ -2367,25 +2367,25 @@ extract_domain() {
 
 domain_problem() {
   _dp=$1
-  if [ -z "$_dp" ]; then printf '✏️ Enter a domain first.'; return 0; fi
+  if [ -z "$_dp" ]; then printf '✏️ 请先输入域名。'; return 0; fi
   case $_dp in
     '*.'*)
       if [ "$2" != allow ]; then
-        printf "🚫 Hosts files can’t block wildcards. Enter the exact domain to block."
+        printf "🚫 Hosts 文件不能拦截通配符，请输入要拦截的精确域名。"
         return 0
       fi
       _dp=${_dp#'*.'}
       ;;
   esac
   case $_dp in
-    *"$NL"* | *"$CR"*) printf "🚫 That doesn’t look like a valid domain. Example: ads.example.com"; return 0 ;;
-    *' '* | *"$TAB"*) printf "🚫 Spaces aren’t allowed in a domain."; return 0 ;;
-    *'*'*) printf "🚫 A wildcard only works at the start of an allow rule, like *.example.com."; return 0 ;;
-    \[* | *:*) printf "🚫 Ports and IPv6 addresses aren’t allowed. Enter just the domain, like example.com."; return 0 ;;
+    *"$NL"* | *"$CR"*) printf "🚫 这看起来不是有效域名，例如 ads.example.com。"; return 0 ;;
+    *' '* | *"$TAB"*) printf "🚫 域名中不能包含空格。"; return 0 ;;
+    *'*'*) printf "🚫 通配符只能用在放行规则开头，例如 *.example.com。"; return 0 ;;
+    \[* | *:*) printf "🚫 不允许端口和 IPv6 地址，请只输入域名，例如 example.com。"; return 0 ;;
   esac
-  case $_dp in *[!0-9.]*) ;; *) printf "🚫 IP addresses aren’t allowed. Enter a domain name instead."; return 0 ;; esac
+  case $_dp in *[!0-9.]*) ;; *) printf "🚫 不允许 IP 地址，请输入域名。"; return 0 ;; esac
   if ! printf '%s\n' "$_dp" | awk "$AWK_VALID"; then
-    printf "🚫 That doesn’t look like a valid domain. Example: ads.example.com"
+    printf "🚫 这看起来不是有效域名，例如 ads.example.com。"
   fi
   return 0
 }
@@ -2544,7 +2544,7 @@ cmd_wait() {
     nap 0.5
   done
   case $R_OP in
-    *'"running":true'*) reply false timeout '⏳ The task is still running.' "$R_OP" ;;
+    *'"running":true'*) reply false timeout '⏳ 任务仍在运行。' "$R_OP" ;;
     *'"state":"error"'* | *'"state":"interrupted"'*) reply false failed '' "$R_OP" ;;
     *) reply true finished '' "$R_OP" ;;
   esac
@@ -2596,20 +2596,20 @@ cmd_lists() {
 
 cmd_meta_refresh() {
   if [ -n "$1" ]; then
-    if ! list_info "$1"; then reply false invalid_list '❌ Unknown list.'; return 0; fi
+    if ! list_info "$1"; then reply false invalid_list '❌ 未知列表。'; return 0; fi
     _mr=$1
   else
     meta_ids
     _mr=$R_META
   fi
   if lock_alive "$METALOCK"; then
-    reply true refreshing '🔄 Already refreshing list details…' '{"refreshing":true}'
+    reply true refreshing '🔄 已在刷新列表详情…' '{"refreshing":true}'
     return 0
   fi
   if meta_start $_mr; then
-    reply true refreshing '🔄 Refreshing list details…' '{"refreshing":true}'
+    reply true refreshing '🔄 正在刷新列表详情…' '{"refreshing":true}'
   else
-    reply false refresh_failed "❌ Couldn’t start refreshing list details. Please try again." '{"refreshing":false}'
+    reply false refresh_failed "❌ 无法开始刷新列表详情，请重试。" '{"refreshing":false}'
   fi
 }
 
@@ -2620,7 +2620,7 @@ start_job() {
   fi
   op_finish error spawn_failed "❌ Couldn’t start the background task. Please try again."
   lock_drop "$LOCKD"
-  log ERROR "Could not start a background task"
+  log ERROR "无法启动后台任务"
   return 1
 }
 
@@ -2629,22 +2629,22 @@ job_reply() {
   reply true started "$1" "{\"op\":$R_OP}"
 }
 
-spawn_failed_reply() { reply false spawn_failed "❌ Couldn’t start the background task. Please try again."; }
+spawn_failed_reply() { reply false spawn_failed "❌ 无法启动后台任务，请重试。"; }
 
 cmd_apply() {
-  if ! list_info "$1" || [ "$L_KIND" != base ]; then reply false invalid_list '❌ Unknown list.'; return 0; fi
+  if ! list_info "$1" || [ "$L_KIND" != base ]; then reply false invalid_list '❌ 未知列表。'; return 0; fi
   _ap_id=$1
   cfg_load
-  if [ "$C_ENABLED" != 1 ]; then reply false blocker_disabled '⏻ Enable the blocker first.'; return 0; fi
+  if [ "$C_ENABLED" != 1 ]; then reply false blocker_disabled '⏻ 请先开启拦截。'; return 0; fi
   if [ "$C_LIST" = "$_ap_id" ] && [ "$C_SETUP" = ready ] && src_ready "$_ap_id"; then
-    reply false already_active '⚠️ This list is already active. Use Update Lists instead.'
+    reply false already_active '⚠️ 该列表已在生效中，请使用“更新列表”。'
     return 0
   fi
   lock_take "$LOCKD" || { busy_reply; return 0; }
   list_info "$_ap_id"
-  log INFO "Switching to $L_NAME"
+  log INFO "正在切换到 $L_NAME"
   if start_job apply "$_ap_id" "$C_ADDONS"; then
-    job_reply "⬇️ Downloading $L_NAME…"
+    job_reply "⬇️ 正在下载 $L_NAME…"
   else
     spawn_failed_reply
   fi
@@ -2652,13 +2652,13 @@ cmd_apply() {
 
 cmd_update() {
   cfg_load
-  if [ "$C_ENABLED" != 1 ]; then reply false blocker_disabled '⏻ Enable the blocker first.'; return 0; fi
+  if [ "$C_ENABLED" != 1 ]; then reply false blocker_disabled '⏻ 请先开启拦截。'; return 0; fi
   lock_take "$LOCKD" || { busy_reply; return 0; }
   _up_kind=update
   [ "$C_SETUP" = ready ] && src_ready "$C_LIST" || _up_kind=setup
   _up_name=$L_NAME
   if start_job "$_up_kind" "$C_LIST" "$C_ADDONS"; then
-    job_reply "🔄 Checking $_up_name for updates…"
+    job_reply "🔄 正在检查 $_up_name 的更新…"
   else
     spawn_failed_reply
   fi
@@ -2666,35 +2666,35 @@ cmd_update() {
 
 cmd_addons() {
   case $1 in
-    *[!a-z0-9,\ -]*) reply false invalid_list '❌ Unknown add-on.'; return 0 ;;
+    *[!a-z0-9,\ -]*) reply false invalid_list '❌ 未知附加列表。'; return 0 ;;
   esac
   _ad_new=
   for _ad in $(printf '%s' "$1" | tr ',' ' '); do
     if ! list_info "$_ad" || [ "$L_KIND" != addon ]; then
-      reply false invalid_list '❌ Unknown add-on.'
+      reply false invalid_list '❌ 未知附加列表。'
       return 0
     fi
     word_in "$_ad" "$_ad_new" || _ad_new="$_ad_new $_ad"
   done
   _ad_new=${_ad_new# }
   cfg_load
-  if [ "$C_ENABLED" != 1 ]; then reply false blocker_disabled '⏻ Enable the blocker first.'; return 0; fi
+  if [ "$C_ENABLED" != 1 ]; then reply false blocker_disabled '⏻ 请先开启拦截。'; return 0; fi
   if [ "$C_SETUP" != ready ] || ! src_ready "$C_LIST"; then
-    reply false setup_pending '⏳ Download your main list first, then add add-ons.'
+    reply false setup_pending '⏳ 请先下载主列表，再添加附加列表。'
     return 0
   fi
   _ad_same=1
   for _ad in $_ad_new; do word_in "$_ad" "$C_ADDONS" || _ad_same=0; done
   for _ad in $C_ADDONS; do word_in "$_ad" "$_ad_new" || _ad_same=0; done
   if [ "$_ad_same" = 1 ] && sources_ready; then
-    reply false unchanged '✅ These add-ons are already active.'
+    reply false unchanged '✅ 这些附加列表已处于启用状态。'
     return 0
   fi
   lock_take "$LOCKD" || { busy_reply; return 0; }
   set -- $_ad_new
-  log INFO "Changing add-ons to: ${_ad_new:-none}"
+  log INFO "正在更改附加列表：${_ad_new:-无}"
   if start_job addons "$C_LIST" "$_ad_new"; then
-    job_reply "🧩 Applying $# $(plural "$#" add-on add-ons)…"
+    job_reply "🧩 正在应用 $# 个附加列表…"
   else
     spawn_failed_reply
   fi
@@ -2716,41 +2716,41 @@ cmd_source_add() {
   _sa_raw=${2:-}
   case $_sa_u in
     https://*) ;;
-    *) reply false source_invalid '🚫 Enter a full HTTPS address, like https://example.com/hosts.txt'; return 0 ;;
+    *) reply false source_invalid '🚫 请输入完整的 HTTPS 地址，例如 https://example.com/hosts.txt'; return 0 ;;
   esac
   case $_sa_u in
-    *[!A-Za-z0-9._~:/?\&=%+,@-]*) reply false source_invalid '🚫 That address contains characters that aren’t allowed.'; return 0 ;;
+    *[!A-Za-z0-9._~:/?\&=%+,@-]*) reply false source_invalid '🚫 该地址包含不允许的字符。'; return 0 ;;
   esac
-  if [ "${#_sa_u}" -gt 300 ]; then reply false source_invalid '🚫 That address is too long.'; return 0; fi
+  if [ "${#_sa_u}" -gt 300 ]; then reply false source_invalid '🚫 该地址过长。'; return 0; fi
   _sa_h=${_sa_u#https://}
   _sa_h=${_sa_h%%/*}
   _sa_h=${_sa_h%%\?*}
-  case $_sa_h in *@*) reply false source_invalid '🚫 Addresses with a user name aren’t allowed.'; return 0 ;; esac
+  case $_sa_h in *@*) reply false source_invalid '🚫 不允许包含用户名的地址。'; return 0 ;; esac
   case $_sa_h in *:*) _sa_p=${_sa_h##*:}; _sa_h=${_sa_h%:*}; is_num "$_sa_p" || _sa_h= ;; esac
   _sa_h=$(printf '%s' "$_sa_h" | tr '[:upper:]' '[:lower:]')
   if [ -z "$_sa_h" ] || ! printf '%s\n' "$_sa_h" | awk "$AWK_VALID"; then
-    reply false source_invalid '🚫 The address needs a real domain name. IP addresses and local hosts aren’t allowed.'
+    reply false source_invalid '🚫 地址必须使用真实域名，不允许 IP 地址和本地 hosts。'
     return 0
   fi
   for _sa_i in $BASE_IDS $ADDON_IDS; do
     list_info "$_sa_i"
     if [ "$L_URL" = "$_sa_u" ]; then
-      reply false source_exists "⚠️ That address is already built in as $L_NAME."
+      reply false source_exists "⚠️ 该地址已作为 $L_NAME 内置。"
       return 0
     fi
   done
   custom_ids
   set -- $R_CUSTOM
   if [ -f "$SRCF" ] && grep -qF "|$_sa_u|" "$SRCF" 2>/dev/null; then
-    reply false source_exists '⚠️ That list is already in your custom lists.'
+    reply false source_exists '⚠️ 该列表已在你的自定义列表中。'
     return 0
   fi
   if [ "$#" -ge "$CUSTOM_MAX" ]; then
-    reply false source_limit "📦 You can add up to $CUSTOM_MAX custom lists. Remove one first."
+    reply false source_limit "📦 最多可添加 $CUSTOM_MAX 个自定义列表，请先移除一个。"
     return 0
   fi
   if ! custom_id_for "$_sa_u" || custom_info "$R_CID"; then
-    reply false source_invalid '❌ Couldn’t register that address. Please try a different one.'
+    reply false source_invalid '❌ 无法注册该地址，请换一个试试。'
     return 0
   fi
   _sa_n=$(printf '%s' "$_sa_raw" | tr -cd 'A-Za-z0-9 ._()+-' | cut -c1-40)
@@ -2764,45 +2764,45 @@ cmd_source_add() {
   set -- $R_CUSTOM
   if [ -f "$SRCF" ] && grep -qF "|$_sa_u|" "$SRCF" 2>/dev/null; then
     lock_drop "$LOCKD"
-    reply false source_exists '⚠️ That list is already in your custom lists.'
+    reply false source_exists '⚠️ 该列表已在你的自定义列表中。'
     return 0
   fi
   if [ "$#" -ge "$CUSTOM_MAX" ]; then
     lock_drop "$LOCKD"
-    reply false source_limit "📦 You can add up to $CUSTOM_MAX custom lists. Remove one first."
+    reply false source_limit "📦 最多可添加 $CUSTOM_MAX 个自定义列表，请先移除一个。"
     return 0
   fi
   if ! custom_id_for "$_sa_u" || custom_info "$R_CID"; then
     lock_drop "$LOCKD"
-    reply false source_invalid '❌ Couldn’t register that address. Please try a different one.'
+    reply false source_invalid '❌ 无法注册该地址，请换一个试试。'
     return 0
   fi
   if ! printf '%s|%s|%s\n' "$R_CID" "$_sa_u" "$_sa_n" >> "$SRCF"; then
     lock_drop "$LOCKD"
-    reply false write_failed "❌ Couldn’t save the custom list. Please try again."
+    reply false write_failed "❌ 无法保存自定义列表，请重试。"
     return 0
   fi
-  log INFO "Custom list added: $_sa_n ($_sa_h)"
+  log INFO "已添加自定义列表：$_sa_n（$_sa_h）"
   cfg_load
   if [ "$C_ENABLED" = 1 ] && [ "$C_SETUP" = ready ] && src_ready "$C_LIST"; then
     if start_job addons "$C_LIST" "$C_ADDONS $R_CID"; then
       op_json
-      reply true started "⬇️ Downloading $_sa_n…" "{\"id\":\"$R_CID\",\"op\":$R_OP}"
+      reply true started "⬇️ 正在下载 $_sa_n…" "{\"id\":\"$R_CID\",\"op\":$R_OP}"
     else
       spawn_failed_reply
     fi
     return 0
   fi
   lock_drop "$LOCKD"
-  reply true source_added "🔗 $_sa_n was added. Turn it on in Add-ons once the blocker is ready." "{\"id\":\"$R_CID\"}"
+  reply true source_added "🔗 已添加 $_sa_n。拦截就绪后，请在“附加列表”中开启。" "{\"id\":\"$R_CID\"}"
 }
 
 cmd_source_del() {
   case $1 in
     c-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]) ;;
-    *) reply false invalid_list '❌ Unknown custom list.'; return 0 ;;
+    *) reply false invalid_list '❌ 未知自定义列表。'; return 0 ;;
   esac
-  if ! custom_info "$1"; then reply false invalid_list '❌ Unknown custom list.'; return 0; fi
+  if ! custom_info "$1"; then reply false invalid_list '❌ 未知自定义列表。'; return 0; fi
   _sd_n=$L_NAME
   lock_wait "$LOCKD" || { busy_reply; return 0; }
   cfg_load
@@ -2818,15 +2818,15 @@ cmd_source_del() {
   if [ "$_sd_grep" -gt 1 ]; then
     rm -f "$SRCF.tmp.$$"
     lock_drop "$LOCKD"
-    reply false write_failed "❌ Couldn’t update the custom list file. Nothing was changed."
-    log ERROR "Custom list removal failed while rewriting $SRCF"
+    reply false write_failed "❌ 无法更新自定义列表文件，未做任何更改。"
+    log ERROR "重写 $SRCF 时移除自定义列表失败"
     return 0
   fi
   if ! mv -f "$SRCF.tmp.$$" "$SRCF" 2>/dev/null; then
     rm -f "$SRCF.tmp.$$"
     lock_drop "$LOCKD"
-    reply false write_failed "❌ Couldn’t update the custom list file. Nothing was changed."
-    log ERROR "Custom list removal could not replace $SRCF"
+    reply false write_failed "❌ 无法更新自定义列表文件，未做任何更改。"
+    log ERROR "移除自定义列表时无法替换 $SRCF"
     return 0
   fi
   if [ "$_sd_active" = 1 ]; then
@@ -2839,8 +2839,8 @@ cmd_source_del() {
       C_ADDONS=$_sd_old
       cfg_save
       lock_drop "$LOCKD"
-      reply false write_failed "❌ Couldn’t save settings. Nothing was changed."
-      log ERROR "Custom list removal could not save settings"
+      reply false write_failed "❌ 无法保存设置，未做任何更改。"
+      log ERROR "移除自定义列表时无法保存设置"
       return 0
     fi
     if ! rebuild; then
@@ -2850,8 +2850,8 @@ cmd_source_del() {
       [ -n "$_sd_line" ] && printf '%s\n' "$_sd_line" >> "$SRCF" 2>/dev/null
       rebuild >/dev/null 2>&1
       lock_drop "$LOCKD"
-      reply false "$RB_STATE" "❌ Couldn’t rebuild the hosts file, so the custom list was kept."
-      log ERROR "Custom list removal was rolled back after rebuild failure"
+      reply false "$RB_STATE" "❌ 无法重建 hosts 文件，已保留该自定义列表。"
+      log ERROR "重建失败后，自定义列表移除操作已回滚"
       return 0
     fi
     change_note
@@ -2859,20 +2859,20 @@ cmd_source_del() {
   fi
   if ! rm -f "$LISTSD/$1.domains" "$LISTSD/$1.info" "$METAD/$1" "$METAD/$1.busy" 2>/dev/null; then
     lock_drop "$LOCKD"
-    reply false write_failed "❌ Couldn’t remove the custom list cache. Check the WebUI logs."
-    log ERROR "Custom list cache cleanup failed for $1"
+    reply false write_failed "❌ 无法移除自定义列表缓存，请查看 WebUI 日志。"
+    log ERROR "清理 $1 的自定义列表缓存失败"
     return 0
   fi
   lock_drop "$LOCKD"
-  log INFO "Custom list removed: $_sd_n"
-  reply true source_removed "🗑️ Removed $_sd_n.$_sd_note"
+  log INFO "已移除自定义列表：$_sd_n"
+  reply true source_removed "🗑️ 已移除 $_sd_n。$_sd_note"
 }
 
 cmd_cancel() {
   op_reconcile
   op_load
   if [ "$OP_STATE" != running ]; then
-    reply false not_running 'ℹ️ There is nothing to cancel.'
+    reply false not_running 'ℹ️ 没有可取消的任务。'
     return 0
   fi
   case $OP_PHASE in
@@ -2881,11 +2881,11 @@ cmd_cancel() {
       _cc=
       [ -f "$RUND/dl.pid" ] && read -r _cc < "$RUND/dl.pid"
       kill_tree "$_cc"
-      log INFO "Cancel requested"
-      reply true cancelling '✖️ Cancelling…'
+      log INFO "已请求取消"
+      reply true cancelling '✖️ 正在取消…'
       ;;
     *)
-      reply false too_late "⏳ Almost done — the new hosts file is being installed and can’t be cancelled now."
+      reply false too_late "⏳ 即将完成，新的 hosts 文件正在安装，此时无法取消。"
       ;;
   esac
 }
@@ -2894,15 +2894,15 @@ cmd_rules() { rules_json; reply true rules '' "$R_RULES"; }
 
 rule_names() {
   case $1 in
-    allow) RF=$ALLOWF; RF_KEY=a; RF_NAME=Allow; RF_OTHERNAME=Block ;;
-    block) RF=$BLOCKF; RF_KEY=b; RF_NAME=Block; RF_OTHERNAME=Allow ;;
+    allow) RF=$ALLOWF; RF_KEY=a; RF_NAME='放行'; RF_OTHERNAME='拦截' ;;
+    block) RF=$BLOCKF; RF_KEY=b; RF_NAME='拦截'; RF_OTHERNAME='放行' ;;
     *) return 1 ;;
   esac
   return 0
 }
 
 cmd_rule_add() {
-  if ! rule_names "$1"; then reply false invalid_type '❌ Unknown rule type.'; return 0; fi
+  if ! rule_names "$1"; then reply false invalid_type '❌ 未知规则类型。'; return 0; fi
   _ra=$(extract_domain "$2")
   _ra_p=$(domain_problem "$_ra" "$1")
   if [ -n "$_ra_p" ]; then reply false rule_invalid "$_ra_p"; return 0; fi
@@ -2911,54 +2911,54 @@ cmd_rule_add() {
   if ! rules_engine merge "$TMPD/rules.in"; then
     rules_done
     lock_drop "$LOCKD"
-    reply false write_failed "❌ Couldn’t save the rule. Please try again."
+    reply false write_failed "❌ 无法保存规则，请重试。"
     return 0
   fi
   if [ "$((RE_ADDED_A + RE_ADDED_B))" != 1 ]; then
     rules_done
     lock_drop "$LOCKD"
     case $RE_LASTREJ in
-      exists) reply false rule_exists "⚠️ $_ra is already in your $RF_NAME list." ;;
-      covered) reply false rule_exists "⚠️ $_ra is already allowed by your rule $RE_LASTREF." ;;
-      conflict) reply false rule_conflict "⚠️ Already in $RF_OTHERNAME list. Remove $_ra there first." ;;
-      covers) reply false rule_conflict "⚠️ $_ra would also allow $RE_LASTREF, which is in your Block list. Remove it there first." ;;
-      blocked_by_wildcard) reply false rule_conflict "⚠️ $_ra is covered by your allow rule $RE_LASTREF. Remove that rule first." ;;
-      limit) reply false rule_limit "📦 You’ve reached the limit of $(fmt_num "$RULE_MAX") rules for this list. Remove some first." ;;
-      *) reply false rule_invalid "🚫 That doesn’t look like a valid domain. Example: ads.example.com" ;;
+      exists) reply false rule_exists "⚠️ $_ra 已在你的$RF_NAME列表中。" ;;
+      covered) reply false rule_exists "⚠️ $_ra 已被你的规则 $RE_LASTREF 放行。" ;;
+      conflict) reply false rule_conflict "⚠️ 已在$RF_OTHERNAME列表中，请先在那里移除 $_ra。" ;;
+      covers) reply false rule_conflict "⚠️ $_ra 还会放行 $RE_LASTREF，而它位于你的拦截列表中，请先移除它。" ;;
+      blocked_by_wildcard) reply false rule_conflict "⚠️ $_ra 已被你的放行规则 $RE_LASTREF 覆盖，请先移除该规则。" ;;
+      limit) reply false rule_limit "📦 该列表已达到 $(fmt_num "$RULE_MAX") 条规则上限，请先移除一些。" ;;
+      *) reply false rule_invalid "🚫 这看起来不是有效域名，例如 ads.example.com。" ;;
     esac
     return 0
   fi
   if ! rules_commit; then
     rules_done
     lock_drop "$LOCKD"
-    reply false write_failed "❌ Couldn’t save the rule. Please try again."
+    reply false write_failed "❌ 无法保存规则，请重试。"
     return 0
   fi
   if ! rebuild; then
     rules_rollback
     lock_drop "$LOCKD"
-    log ERROR "Rebuilding the hosts file failed after adding $_ra; the rule was rolled back"
-    reply false "$RB_STATE" "❌ Couldn’t rebuild the hosts file, so the rule was not added. Your previous hosts file is in place."
+    log ERROR "添加 $_ra 后重建 hosts 文件失败，规则已回滚"
+    reply false "$RB_STATE" "❌ 无法重建 hosts 文件，规则未添加。之前的 hosts 文件仍然保留。"
     return 0
   fi
   rules_done
   lock_drop "$LOCKD"
-  if [ "$1" = allow ]; then _ra_e='✅'; _ra_v=allowed; else _ra_e='⛔'; _ra_v=blocked; fi
+  if [ "$1" = allow ]; then _ra_e='✅'; _ra_v='已放行'; else _ra_e='⛔'; _ra_v='已拦截'; fi
   case $RB_STATE in
-    disabled) _ra_m="$_ra_e $_ra saved to your $RF_NAME list. It applies when you enable the blocker." ;;
-    nocache) _ra_m="$_ra_e $_ra saved to your $RF_NAME list. It applies once your list is downloaded." ;;
+    disabled) _ra_m="$_ra_e $_ra 已保存到$RF_NAME列表，开启拦截后生效。" ;;
+    nocache) _ra_m="$_ra_e $_ra 已保存到$RF_NAME列表，列表下载完成后生效。" ;;
     *)
       change_note
       if [ "$RB_CHANGED" = 1 ]; then
-        _ra_m="$_ra_e $_ra $_ra_v.$R_NOTE"
+        _ra_m="$_ra_e $_ra $_ra_v。$R_NOTE"
       elif [ "$1" = allow ]; then
-        _ra_m="$_ra_e $_ra allowed. It isn’t on your current lists, so nothing changes right now."
+        _ra_m="$_ra_e $_ra 已放行。它不在当前列表中，因此暂时没有变化。"
       else
-        _ra_m="$_ra_e $_ra blocked. Your current lists already block it."
+        _ra_m="$_ra_e $_ra 已拦截。当前列表已经拦截了它。"
       fi
       ;;
   esac
-  log INFO "$RF_NAME rule added: $_ra"
+  log INFO "已添加$RF_NAME规则：$_ra"
   rules_json
   jbool "$RB_CHANGED"; _ra_c=$JB
   jbool "$RB_LIVE"
@@ -2966,13 +2966,13 @@ cmd_rule_add() {
 }
 
 cmd_rule_del() {
-  if ! rule_names "$1"; then reply false invalid_type '❌ Unknown rule type.'; return 0; fi
+  if ! rule_names "$1"; then reply false invalid_type '❌ 未知规则类型。'; return 0; fi
   _rd=$(extract_domain "$2")
   case $_rd in
     '' | *[!a-z0-9._*-]*) _rd= ;;
   esac
   if [ -z "$_rd" ] || ! grep -qxF -e "$_rd" "$RF" 2>/dev/null; then
-    reply false rule_missing "⚠️ That domain isn’t in your $RF_NAME list."
+    reply false rule_missing "⚠️ 该域名不在你的$RF_NAME列表中。"
     return 0
   fi
   lock_wait "$LOCKD" || { busy_reply; return 0; }
@@ -2983,31 +2983,31 @@ cmd_rule_del() {
     rm -f "$RF.tmp"
     rules_done
     lock_drop "$LOCKD"
-    reply false write_failed "❌ Couldn’t remove the rule. Please try again."
+    reply false write_failed "❌ 无法移除规则，请重试。"
     return 0
   fi
   if ! rebuild; then
     rules_rollback
     lock_drop "$LOCKD"
-    log ERROR "Rebuilding the hosts file failed after removing $_rd; the rule was restored"
-    reply false "$RB_STATE" "❌ Couldn’t rebuild the hosts file, so the rule was kept. Your previous hosts file is in place."
+    log ERROR "移除 $_rd 后重建 hosts 文件失败，规则已恢复"
+    reply false "$RB_STATE" "❌ 无法重建 hosts 文件，规则已保留。之前的 hosts 文件仍然保留。"
     return 0
   fi
   rules_done
   lock_drop "$LOCKD"
-  log INFO "$RF_NAME rule removed: $_rd"
+  log INFO "已移除$RF_NAME规则：$_rd"
   change_note
   rules_json
   jbool "$RB_CHANGED"; _rd_c=$JB
   jbool "$RB_LIVE"
-  reply true rule_removed "🗑️ Removed $_rd from your $RF_NAME list.$R_NOTE" "{\"rules\":$R_RULES,\"changed\":$_rd_c,\"live\":$JB}"
+  reply true rule_removed "🗑️ 已从$RF_NAME列表中移除 $_rd。$R_NOTE" "{\"rules\":$R_RULES,\"changed\":$_rd_c,\"live\":$JB}"
 }
 
 cmd_rules_import() {
   _ri_mode=merge
   [ "${3:-}" = replace ] && _ri_mode=replace
   if [ -z "$1$2" ] && [ "$_ri_mode" != replace ]; then
-    reply false import_empty '✏️ There is nothing to import.'
+    reply false import_empty '✏️ 没有可导入的内容。'
     return 0
   fi
   lock_wait "$LOCKD" || { busy_reply; return 0; }
@@ -3018,7 +3018,7 @@ cmd_rules_import() {
   if ! rules_engine "$_ri_mode" "$TMPD/rules.in"; then
     rules_done
     lock_drop "$LOCKD"
-    reply false write_failed "❌ Couldn’t import the rules. Nothing was changed."
+    reply false write_failed "❌ 无法导入规则，未做任何更改。"
     return 0
   fi
   _ri_add=$((RE_ADDED_A + RE_ADDED_B))
@@ -3028,32 +3028,32 @@ cmd_rules_import() {
     rules_done
     lock_drop "$LOCKD"
     rules_json
-    reply false import_nothing "ℹ️ Nothing new to import — $_ri_skip $(plural "$_ri_skip" entry entries) skipped." "{$_ri_d,\"rules\":$R_RULES}"
+    reply false import_nothing "ℹ️ 没有新规则可导入，已跳过 $_ri_skip 条。" "{$_ri_d,\"rules\":$R_RULES}"
     return 0
   fi
   if ! rules_commit; then
     rules_done
     lock_drop "$LOCKD"
-    reply false write_failed "❌ Couldn’t import the rules. Nothing was changed."
+    reply false write_failed "❌ 无法导入规则，未做任何更改。"
     return 0
   fi
   if ! rebuild; then
     rules_rollback
     lock_drop "$LOCKD"
-    log ERROR "Rebuilding the hosts file failed after importing rules; the import was rolled back"
-    reply false "$RB_STATE" "❌ Couldn’t rebuild the hosts file, so nothing was imported. Your previous hosts file is in place."
+    log ERROR "导入规则后重建 hosts 文件失败，导入已回滚"
+    reply false "$RB_STATE" "❌ 无法重建 hosts 文件，未导入任何内容。之前的 hosts 文件仍然保留。"
     return 0
   fi
   rules_done
   lock_drop "$LOCKD"
   change_note
   if [ "$_ri_mode" = replace ]; then
-    _ri_m="📥 Rules replaced — $_ri_add $(plural "$_ri_add" rule rules) imported."
+    _ri_m="📥 已替换规则，导入 $_ri_add 条。"
   else
-    _ri_m="📥 Imported $_ri_add $(plural "$_ri_add" rule rules)."
+    _ri_m="📥 已导入 $_ri_add 条规则。"
   fi
-  [ "$_ri_skip" -gt 0 ] && _ri_m="$_ri_m $_ri_skip skipped."
-  log INFO "Rules imported ($_ri_mode): $RE_ADDED_A allow, $RE_ADDED_B block, $_ri_skip skipped"
+  [ "$_ri_skip" -gt 0 ] && _ri_m="$_ri_m 跳过 $_ri_skip 条。"
+  log INFO "规则导入完成（$_ri_mode）：$RE_ADDED_A 条放行，$RE_ADDED_B 条拦截，跳过 $_ri_skip 条"
   rules_json
   jbool "$RB_CHANGED"; _ri_c=$JB
   jbool "$RB_LIVE"
@@ -3063,7 +3063,7 @@ cmd_rules_import() {
 cmd_lookup() {
   _lk=$(extract_domain "$1")
   case $_lk in '*.'*) _lk=${_lk#'*.'} ;; esac
-  if [ -z "$_lk" ]; then reply false lookup_invalid '✏️ Enter a domain or a keyword first.'; return 0; fi
+  if [ -z "$_lk" ]; then reply false lookup_invalid '✏️ 请先输入域名或关键词。'; return 0; fi
   cfg_load
   applied_state
   jbool "$C_ENABLED"; _lk_en=$JB
@@ -3081,9 +3081,9 @@ cmd_lookup() {
       [ "$_lk_n" -gt 0 ] && _lk_m=$(printf '%s\n' "$_lk_o" | awk -v n="$_lk_n" 'NR <= 40 && NR <= n' | awk "$AWK_JARR")
     fi
     if [ "$_lk_n" = 0 ]; then
-      _lk_msg="🔍 No blocked domain contains “$_lk”."
+      _lk_msg="🔍 没有已拦截域名包含“$_lk”。"
     else
-      _lk_msg="🔍 $(fmt_num "$_lk_n") blocked $(plural "$_lk_n" domain domains) contain “$_lk”."
+      _lk_msg="🔍 有 $(fmt_num "$_lk_n") 个已拦截域名包含“$_lk”。"
     fi
     reply true lookup "$_lk_msg" "{\"type\":\"keyword\",\"query\":\"$_lk\",\"matchCount\":$_lk_n,\"matches\":$_lk_m,\"enabled\":$_lk_en,\"applied\":\"$R_APPLIED\"}"
     return 0
@@ -3131,41 +3131,41 @@ cmd_lookup() {
   fi
   if [ "$C_ENABLED" != 1 ]; then
     _lk_st=disabled
-    _lk_msg="🔴 The blocker is off, so $_lk isn’t blocked right now."
+    _lk_msg="🔴 拦截已关闭，$_lk 当前未被拦截。"
   elif [ "$_lk_in" = true ]; then
     _lk_st=blocked
     if [ "$_lk_rule" = block ]; then
-      _lk_msg="⛔ $_lk is blocked by your Block rule."
+      _lk_msg="⛔ $_lk 被你的拦截规则拦截。"
     else
-      _lk_msg="⛔ $_lk is blocked by ${_lk_names:-your lists}."
+      _lk_msg="⛔ $_lk 被 ${_lk_names:-你的列表} 拦截。"
     fi
   elif [ "$_lk_rule" = allow ]; then
     _lk_st=allowed
     if [ -n "$_lk_names" ]; then
-      _lk_msg="✅ $_lk is allowed by your rule $_lk_ref. Without it, $_lk_names would block it."
+      _lk_msg="✅ $_lk 被你的规则 $_lk_ref 放行；若无此规则，$_lk_names 会拦截它。"
     else
-      _lk_msg="✅ $_lk is allowed by your rule $_lk_ref."
+      _lk_msg="✅ $_lk 被你的规则 $_lk_ref 放行。"
     fi
   else
     _lk_st=clear
-    _lk_msg="✅ $_lk isn’t blocked."
+    _lk_msg="✅ $_lk 未被拦截。"
   fi
   reply true lookup "$_lk_msg" "{\"type\":\"domain\",\"query\":\"$_lk\",\"domain\":\"$_lk\",\"status\":\"$_lk_st\",\"rule\":\"$_lk_rule\",\"ref\":\"$_lk_ref\",\"sources\":$_lk_src,\"subCount\":$_lk_n,\"subs\":$_lk_m,\"enabled\":$_lk_en,\"applied\":\"$R_APPLIED\"}"
 }
 
 cmd_disable() {
   cfg_load
-  if [ "$C_ENABLED" != 1 ]; then reply false already_disabled '🔴 The blocker is already disabled.'; return 0; fi
+  if [ "$C_ENABLED" != 1 ]; then reply false already_disabled '🔴 拦截已处于关闭状态。'; return 0; fi
   lock_wait "$LOCKD" || { busy_reply; return 0; }
   if ! compile_into "$HOSTSD/.hosts.hknew" 0; then
     rm -f "$HOSTSD/.hosts.hknew"
     lock_drop "$LOCKD"
-    reply false write_failed "❌ Couldn’t write the hosts file. Nothing was changed."
+    reply false write_failed "❌ 无法写入 hosts 文件，未做任何更改。"
     return 0
   fi
   if ! install_hosts "$HOSTSD/.hosts.hknew" 0; then
     lock_drop "$LOCKD"
-    reply false write_failed "❌ Couldn’t write the hosts file. Your previous hosts file was restored."
+    reply false write_failed "❌ 无法写入 hosts 文件，已恢复之前的 hosts 文件。"
     return 0
   fi
   C_ENABLED=0
@@ -3178,17 +3178,17 @@ cmd_disable() {
   fi
   set_description
   lock_drop "$LOCKD"
-  log INFO "Blocker disabled; lists and rules are kept"
+  log INFO "拦截已关闭，列表和规则均已保留"
   if [ "$_ds_live" = 1 ]; then
-    reply true disabled '🔴 Blocker disabled. Blocking is off now — your lists and rules are kept.' '{"live":true}'
+    reply true disabled '🔴 已关闭拦截。当前不再拦截，列表和规则均已保留。' '{"live":true}'
   else
-    reply true disabled '🔴 Blocker disabled. Reboot to stop blocking. Your lists and rules are kept.' '{"live":false}'
+    reply true disabled '🔴 已关闭拦截。重启后停止拦截，列表和规则均已保留。' '{"live":false}'
   fi
 }
 
 cmd_enable() {
   cfg_load
-  if [ "$C_ENABLED" = 1 ]; then reply false already_enabled '🟢 The blocker is already enabled.'; return 0; fi
+  if [ "$C_ENABLED" = 1 ]; then reply false already_enabled '🟢 拦截已处于开启状态。'; return 0; fi
   lock_wait "$LOCKD" || { busy_reply; return 0; }
   _en_name=$L_NAME
   if [ "$C_SETUP" = ready ] && sources_ready; then
@@ -3196,12 +3196,12 @@ cmd_enable() {
     if ! compile_into "$HOSTSD/.hosts.hknew" 1; then
       rm -f "$HOSTSD/.hosts.hknew"
       lock_drop "$LOCKD"
-      reply false write_failed "❌ Couldn’t build the hosts file. Nothing was changed."
+      reply false write_failed "❌ 无法构建 hosts 文件，未做任何更改。"
       return 0
     fi
     if ! install_hosts "$HOSTSD/.hosts.hknew" "$CH_COUNT"; then
       lock_drop "$LOCKD"
-      reply false write_failed "❌ Couldn’t write the hosts file. Your previous hosts file was restored."
+      reply false write_failed "❌ 无法写入 hosts 文件，已恢复之前的 hosts 文件。"
       return 0
     fi
     C_DOMAINS=$CH_COUNT
@@ -3215,17 +3215,17 @@ cmd_enable() {
     fi
     set_description
     lock_drop "$LOCKD"
-    log INFO "Blocker enabled with $_en_name ($(fmt_num "$CH_COUNT") domains)"
+    log INFO "已使用 $_en_name 开启拦截，共 $(fmt_num "$CH_COUNT") 个域名"
     if [ "$_en_live" = 1 ]; then
-      reply true enabled "🟢 Blocker enabled — $(fmt_num "$CH_COUNT") domains. Active now." '{"live":true}'
+      reply true enabled "🟢 已开启拦截，共 $(fmt_num "$CH_COUNT") 个域名，当前已生效。" '{"live":true}'
     else
-      reply true enabled "🟢 Blocker enabled — $(fmt_num "$CH_COUNT") domains. Reboot to apply." '{"live":false}'
+      reply true enabled "🟢 已开启拦截，共 $(fmt_num "$CH_COUNT") 个域名，重启后生效。" '{"live":false}'
     fi
     return 0
   fi
-  log INFO "Blocker enable requested; a cached list is missing, downloading it again"
+  log INFO "已请求开启拦截，但缓存列表缺失，正在重新下载"
   if start_job enable "$C_LIST" "$C_ADDONS"; then
-    job_reply "⬇️ Downloading $_en_name to turn blocking back on…"
+    job_reply "⬇️ 正在下载 $_en_name，以重新开启拦截…"
   else
     spawn_failed_reply
   fi
@@ -3242,32 +3242,32 @@ cmd_settings() { cfg_load; settings_json; reply true settings '' "$R_SETTINGS"; 
 cmd_set() {
   case $1 in
     live)
-      case $2 in 0 | 1) ;; *) reply false invalid_value '❌ Unknown value.'; return 0 ;; esac
+      case $2 in 0 | 1) ;; *) reply false invalid_value '❌ 未知取值。'; return 0 ;; esac
       lock_wait "$LOCKD" || { busy_reply; return 0; }
       cfg_load
       C_LIVE=$2
       cfg_save
       if [ "$2" = 1 ]; then
-        _se_m='⚡ Live apply is on. Changes take effect right away whenever your device allows it.'
+        _se_m='⚡ 即时生效已开启。设备允许时，更改会立即生效。'
         if [ "$C_SETUP" = ready ] && ! hosts_live; then
           if apply_now; then
             flush_dns
-            _se_m='⚡ Live apply is on — your pending changes are active now.'
+            _se_m='⚡ 即时生效已开启，待处理的更改现已生效。'
           else
-            _se_m='⚡ Live apply is on. Your pending changes still need one reboot.'
+            _se_m='⚡ 即时生效已开启，但待处理的更改仍需重启一次。'
           fi
         fi
       else
-        _se_m='🔁 Live apply is off. Changes take effect after a reboot.'
+        _se_m='🔁 即时生效已关闭，更改将在重启后生效。'
       fi
       set_description
       lock_drop "$LOCKD"
-      log INFO "Live apply turned $([ "$2" = 1 ] && printf on || printf off)"
+      log INFO "即时生效已$([ "$2" = 1 ] && printf 开启 || printf 关闭)"
       settings_json
       reply true setting_saved "$_se_m" "$R_SETTINGS"
       ;;
     autoupdate)
-      case $2 in 0 | 1 | 3 | 7) ;; *) reply false invalid_value '❌ Unknown value.'; return 0 ;; esac
+      case $2 in 0 | 1 | 3 | 7) ;; *) reply false invalid_value '❌ 未知取值。'; return 0 ;; esac
       lock_wait "$LOCKD" || { busy_reply; return 0; }
       cfg_load
       C_AUTO=$2
@@ -3275,15 +3275,15 @@ cmd_set() {
       lock_drop "$LOCKD"
       sched_sync
       case $2 in
-        0) _se_m='🔕 Auto-update is off.' ;;
-        1) _se_m='🔄 Auto-update is on. Your lists are checked every day.' ;;
-        *) _se_m="🔄 Auto-update is on. Your lists are checked every $2 days." ;;
+        0) _se_m='🔕 自动更新已关闭。' ;;
+        1) _se_m='🔄 自动更新已开启，每天检查一次列表。' ;;
+        *) _se_m="🔄 自动更新已开启，每 $2 天检查一次列表。" ;;
       esac
-      log INFO "Auto-update set to $2 $(plural "$2" day days)"
+      log INFO "自动更新已设置为每 $2 天一次"
       settings_json
       reply true setting_saved "$_se_m" "$R_SETTINGS"
       ;;
-    *) reply false invalid_setting '❌ Unknown setting.' ;;
+    *) reply false invalid_setting '❌ 未知设置项。' ;;
   esac
 }
 
@@ -3310,26 +3310,26 @@ cmd_diag() {
   _dg_now=$(now)
 
   if [ "$C_SETUP" != ready ]; then
-    diag_add warn setup '⏳ Setup' "The first list hasn’t been downloaded yet. Tap Download now."
+    diag_add warn setup '⏳ 初始化' "首个列表尚未下载，请点击“立即下载”。"
   elif [ "$C_ENABLED" != 1 ]; then
-    diag_add warn blocker '🛡️ Blocker' 'The blocker is turned off, so nothing is blocked.'
+    diag_add warn blocker '🛡️ 拦截状态' '拦截开关已关闭，当前不会拦截任何内容。'
   else
-    diag_add ok blocker '🛡️ Blocker' "On with $_dg_name and $(fmt_num "$C_DOMAINS") blocked domains."
+    diag_add ok blocker '🛡️ 拦截状态' "已开启，使用 $_dg_name，已拦截 $(fmt_num "$C_DOMAINS") 个域名。"
   fi
 
   if [ ! -f "$HOSTS" ]; then
-    diag_add err integrity '🧾 Hosts file' 'The hosts file is missing. Tap Repair to rebuild it.'
+    diag_add err integrity '🧾 Hosts 文件' 'hosts 文件不存在，请点击“修复”重新构建。'
   else
     _dg_want=$C_DOMAINS
     [ "$C_ENABLED" = 1 ] && [ "$C_SETUP" = ready ] || _dg_want=0
     if ! verify_hosts_deep "$_dg_want"; then
-      diag_add err integrity '🧾 Hosts file' 'The hosts file doesn’t match what HostKeeper built. Tap Repair to rebuild it.'
+      diag_add err integrity '🧾 Hosts 文件' 'hosts 文件与 HostKeeper 构建的内容不一致，请点击“修复”重新构建。'
     else
       sum_check
       case $? in
-        0) diag_add ok integrity '🧾 Hosts file' "Verified: $(fmt_num "$_dg_want") entries, $(fmt_mb "$(fsize "$HOSTS")"), checksum matches." ;;
-        1) diag_add err integrity '🧾 Hosts file' 'The checksum doesn’t match. Tap Repair to rebuild it.' ;;
-        *) diag_add warn integrity '🧾 Hosts file' 'The checksum cannot be verified with the available tools. Tap Repair to rebuild it.' ;;
+        0) diag_add ok integrity '🧾 Hosts 文件' "校验通过：$(fmt_num "$_dg_want") 条记录，$(fmt_mb "$(fsize "$HOSTS")")，校验和匹配。" ;;
+        1) diag_add err integrity '🧾 Hosts 文件' '校验和不匹配，请点击“修复”重新构建。' ;;
+        *) diag_add warn integrity '🧾 Hosts 文件' '当前可用工具无法校验校验和，请点击“修复”重新构建。' ;;
       esac
     fi
   fi
@@ -3337,23 +3337,23 @@ cmd_diag() {
   case $R_APPLIED in
     applied)
       case $R_MOUNT in
-        self) diag_add ok applied '🧪 Applied to the system' 'Android is using HostKeeper’s hosts file. HostKeeper mounted it directly.' ;;
-        *) diag_add ok applied '🧪 Applied to the system' 'Android is using HostKeeper’s hosts file.' ;;
+        self) diag_add ok applied '🧪 系统生效状态' 'Android 正在使用 HostKeeper 的 hosts 文件，由 HostKeeper 直接挂载。' ;;
+        *) diag_add ok applied '🧪 系统生效状态' 'Android 正在使用 HostKeeper 的 hosts 文件。' ;;
       esac
       ;;
-    pending) diag_add warn applied '🧪 Applied to the system' 'Your latest changes become active after a reboot.' ;;
-    overridden) diag_add err applied '🧪 Applied to the system' "Another module provides /system/etc/hosts: $R_CONF. Disable it and reboot." ;;
-    inactive) diag_add err applied '🧪 Applied to the system' 'Android isn’t using HostKeeper’s hosts file. Reboot, or tap Repair to mount it now.' ;;
-    *) diag_add warn applied '🧪 Applied to the system' 'The system hosts file couldn’t be checked.' ;;
+    pending) diag_add warn applied '🧪 系统生效状态' '最新更改将在重启后生效。' ;;
+    overridden) diag_add err applied '🧪 系统生效状态' "另一个模块正在提供 /system/etc/hosts：$R_CONF。请停用它并重启。" ;;
+    inactive) diag_add err applied '🧪 系统生效状态' 'Android 未使用 HostKeeper 的 hosts 文件。请重启，或点击“修复”立即挂载。' ;;
+    *) diag_add warn applied '🧪 系统生效状态' '无法检查系统 hosts 文件。' ;;
   esac
 
   if [ -n "$R_CONF" ] && [ "$R_APPLIED" != overridden ]; then
-    diag_add warn conflicts '🧩 Other hosts modules' "These modules also carry a hosts file: $R_CONF."
+    diag_add warn conflicts '🧩 其他 hosts 模块' "以下模块也带有 hosts 文件：$R_CONF。"
   elif [ -z "$R_CONF" ]; then
     if [ -d /data/data/org.adaway ]; then
-      diag_add warn conflicts '🧩 Other hosts modules' 'AdAway is installed. Don’t use its root mode together with HostKeeper.'
+      diag_add warn conflicts '🧩 其他 hosts 模块' '检测到 AdAway。请不要同时使用它的 root 模式与 HostKeeper。'
     else
-      diag_add ok conflicts '🧩 Other hosts modules' 'No conflicting hosts module was found.'
+      diag_add ok conflicts '🧩 其他 hosts 模块' '未发现冲突的 hosts 模块。'
     fi
   fi
 
@@ -3365,71 +3365,71 @@ cmd_diag() {
       _dg_miss="$_dg_miss${_dg_miss:+, }$L_NAME"
     done
     if [ -n "$_dg_miss" ]; then
-      diag_add warn caches '🗂️ Cached lists' "Missing from the cache: $_dg_miss. Tap Update Lists to download again."
+      diag_add warn caches '🗂️ 列表缓存' "缓存中缺少：$_dg_miss。请点击“更新列表”重新下载。"
     else
       set -- $C_ADDONS
-      diag_add ok caches '🗂️ Cached lists' "$_dg_name and $# $(plural "$#" add-on add-ons) are cached for instant rebuilds."
+      diag_add ok caches '🗂️ 列表缓存' "$_dg_name 和 $# 个附加列表已缓存，可即时重建。"
     fi
     _dg_age=$(((_dg_now - C_UPDATED) / 86400))
     if [ "$C_UPDATED" = 0 ]; then
-      diag_add warn freshness '🕒 List age' 'The lists have never been updated.'
+      diag_add warn freshness '🕒 列表更新时间' '列表从未更新过。'
     elif [ "$_dg_age" -ge "$STALE_DAYS" ]; then
-      diag_add warn freshness '🕒 List age' "Last updated $_dg_age days ago. Tap Update Lists, or turn on auto-update."
+      diag_add warn freshness '🕒 列表更新时间' "上次更新是在 $_dg_age 天前。请点击“更新列表”，或开启自动更新。"
     else
-      diag_add ok freshness '🕒 List age' "Last updated $_dg_age $(plural "$_dg_age" day days) ago."
+      diag_add ok freshness '🕒 列表更新时间' "上次更新是在 $_dg_age 天前。"
     fi
   fi
 
   if [ "$C_AUTO" -gt 0 ]; then
     if sched_alive; then
-      diag_add ok scheduler '🔄 Auto-update' "On, every $C_AUTO $(plural "$C_AUTO" day days). The scheduler is running."
+      diag_add ok scheduler '🔄 自动更新' "已开启，每 $C_AUTO 天一次，调度器正在运行。"
     else
-      diag_add warn scheduler '🔄 Auto-update' 'On, but the scheduler isn’t running. It starts again at the next boot, or when you save the setting again.'
+      diag_add warn scheduler '🔄 自动更新' '已开启，但调度器未运行。下次开机或重新保存设置后会启动。'
     fi
   else
-    diag_add info scheduler '🔄 Auto-update' 'Off. Lists only update when you tap Update Lists.'
+    diag_add info scheduler '🔄 自动更新' '已关闭。只有点击“更新列表”时才会更新。'
   fi
 
   if [ "$C_LIVE" = 1 ]; then
-    diag_add info live '⚡ Live apply' 'On. Changes are written in place and take effect without a reboot when possible.'
+    diag_add info live '⚡ 即时生效' '已开启。更改会直接写入，并在可能时无需重启即可生效。'
   else
-    diag_add info live '⚡ Live apply' 'Off. Changes take effect after a reboot.'
+    diag_add info live '⚡ 即时生效' '已关闭。更改将在重启后生效。'
   fi
 
   if dl_detect; then
     if [ "$DL_TOOL" = curl ]; then
       if [ "$DL_GZ" = 1 ]; then
-        diag_add ok downloader '⬇️ Downloader' 'curl with compressed transfers.'
+        diag_add ok downloader '⬇️ 下载工具' 'curl，启用压缩传输。'
       else
-        diag_add ok downloader '⬇️ Downloader' 'curl.'
+        diag_add ok downloader '⬇️ 下载工具' 'curl。'
       fi
     else
-      diag_add ok downloader '⬇️ Downloader' 'BusyBox wget.'
+      diag_add ok downloader '⬇️ 下载工具' 'BusyBox wget。'
     fi
     if dl_get "$_dg_url" "$TMPD/diag.body" "$TMPD/diag.hdr" peek; then
-      diag_add ok network '🌐 List server' "Reachable (HTTP $DL_CODE)."
+      diag_add ok network '🌐 列表服务器' "可访问（HTTP $DL_CODE）。"
     else
-      diag_add warn network '🌐 List server' "Couldn’t reach the server of $_dg_name: $(dl_reason)."
+      diag_add warn network '🌐 列表服务器' "无法连接 $_dg_name 的服务器：$(dl_reason)。"
     fi
     rm -f "$TMPD/diag.body" "$TMPD/diag.hdr" "$TMPD/diag.hdr.err"
   else
-    diag_add err downloader '⬇️ Downloader' 'Neither curl nor BusyBox wget is available, so lists can’t be downloaded.'
+    diag_add err downloader '⬇️ 下载工具' 'curl 和 BusyBox wget 都不可用，无法下载列表。'
   fi
 
   if [ "$HK_BB" = none ]; then
-    diag_add warn busybox '🧰 BusyBox' 'No root manager BusyBox was found. HostKeeper is using system tools.'
+    diag_add warn busybox '🧰 BusyBox' '未找到 root 管理器的 BusyBox，HostKeeper 正在使用系统工具。'
   elif [ "$MGR_HTTPD" = yes ]; then
-    diag_add ok busybox '🧰 BusyBox' "$HK_BB with httpd for the browser WebUI."
+    diag_add ok busybox '🧰 BusyBox' "$HK_BB，包含供浏览器 WebUI 使用的 httpd。"
   else
-    diag_add warn busybox '🧰 BusyBox' "$HK_BB has no httpd, so the Action button can’t open the WebUI in a browser."
+    diag_add warn busybox '🧰 BusyBox' "$HK_BB 不包含 httpd，因此 Action 按钮无法在浏览器中打开 WebUI。"
   fi
 
   _dg_free=$(free_kb "$DATA")
   if is_num "$_dg_free"; then
     if [ "$_dg_free" -lt 51200 ]; then
-      diag_add warn storage '💾 Storage' "Only $((_dg_free / 1024)) MB free. Updates need at least 50 MB."
+      diag_add warn storage '💾 存储空间' "仅剩 $((_dg_free / 1024)) MB，更新至少需要 50 MB。"
     else
-      diag_add ok storage '💾 Storage' "$((_dg_free / 1024)) MB free."
+      diag_add ok storage '💾 存储空间' "剩余 $((_dg_free / 1024)) MB。"
     fi
   fi
 
@@ -3437,19 +3437,19 @@ cmd_diag() {
   if [ -n "$R_GUARD" ]; then
     live_hosts
     if grep -qxF -e "0.0.0.0 $R_GUARD" "$R_LIVE" 2>/dev/null; then
-      diag_add err privatedns '🔏 Private DNS' "Your Private DNS provider $R_GUARD is blocked right now. Tap Repair to fix it."
+      diag_add err privatedns '🔏 私人 DNS' "你的私人 DNS 提供商 $R_GUARD 当前被拦截，请点击“修复”。"
     else
-      diag_add ok privatedns '🔏 Private DNS' "Your provider $R_GUARD is protected from being blocked."
+      diag_add ok privatedns '🔏 私人 DNS' "提供商 $R_GUARD 已受保护，不会被拦截。"
     fi
   fi
 
   count_lines "$ALLOWF"; _dg_a=$R_LINES
   count_lines "$BLOCKF"; _dg_b=$R_LINES
-  diag_add info rules '🧩 Domain rules' "$_dg_a allow and $_dg_b block $(plural "$((_dg_a + _dg_b))" rule rules)."
+  diag_add info rules '🧩 域名规则' "$_dg_a 条放行规则，$_dg_b 条拦截规则。"
 
   _dg_v=
   [ -n "$MGR_VER" ] && _dg_v=" $MGR_VER"
-  diag_add info environment '📦 Environment' "HostKeeper $HK_VER ($HK_VCODE) on $MGR_NAME$_dg_v, Android $(getprop ro.build.version.release 2>/dev/null)."
+  diag_add info environment '📦 运行环境' "HostKeeper $HK_VER ($HK_VCODE)，运行于 $MGR_NAME$_dg_v，Android $(getprop ro.build.version.release 2>/dev/null)。"
 
   reply true diag '' "{\"checks\":[${DG%,}],\"summary\":{\"ok\":$DG_OK,\"warn\":$DG_WARN,\"err\":$DG_ERR}}"
 }
@@ -3499,8 +3499,8 @@ cmd_repair() {
   fi
   if [ "$_rp_ok" = 0 ]; then
     lock_drop "$LOCKD"
-    log ERROR "Repair failed: the hosts file could not be rebuilt"
-    reply false write_failed "❌ Couldn’t rebuild the hosts file. Check 📜 Logs for details."
+    log ERROR "修复失败：无法重建 hosts 文件"
+    reply false write_failed "❌ 无法重建 hosts 文件，请查看 📜 日志 了解详情。"
     return 0
   fi
   [ -f "$SUMF" ] || sum_record "$C_DOMAINS"
@@ -3513,13 +3513,13 @@ cmd_repair() {
   fi
   set_description
   lock_drop "$LOCKD"
-  log INFO "Repair finished: the hosts file was rebuilt and checked"
+  log INFO "修复完成：hosts 文件已重建并校验"
   if [ "$C_SETUP" != ready ]; then
-    reply true repaired '🛠️ Repaired. Tap Download now to fetch your list.' "{\"live\":$_rp_live}"
+    reply true repaired '🛠️ 修复完成。请点击“立即下载”获取列表。' "{\"live\":$_rp_live}"
   elif [ "$_rp_live" = true ]; then
-    reply true repaired '🛠️ Repaired — the hosts file was rebuilt and is active.' "{\"live\":$_rp_live}"
+    reply true repaired '🛠️ 修复完成，hosts 文件已重建并生效。' "{\"live\":$_rp_live}"
   else
-    reply true repaired '🛠️ Repaired — the hosts file was rebuilt. Reboot to activate it.' "{\"live\":$_rp_live}"
+    reply true repaired '🛠️ 修复完成，hosts 文件已重建，重启后生效。' "{\"live\":$_rp_live}"
   fi
 }
 
@@ -3533,16 +3533,16 @@ cmd_logs() {
 
 cmd_logs_clear() {
   : > "$LOGF"
-  reply true logs_cleared '🧹 Logs cleared.'
+  reply true logs_cleared '🧹 日志已清空。'
 }
 
 cmd_reboot() {
   if [ ! -x /system/bin/svc ] && [ ! -x /system/bin/reboot ]; then
-    reply false reboot_failed "❌ Rebooting isn’t possible from here. Please reboot your device manually."
+    reply false reboot_failed "❌ 无法从这里重启设备，请手动重启。"
     return 0
   fi
-  log INFO "Reboot requested from the WebUI"
-  reply true rebooting '🔁 Rebooting your device…'
+  log INFO "已从 WebUI 请求重启"
+  reply true rebooting '🔁 正在重启设备…'
   if has setsid; then
     setsid sh -c 'sleep 2; /system/bin/svc power reboot || /system/bin/reboot || /system/bin/setprop sys.powerctl reboot' < /dev/null > /dev/null 2>&1 &
   else
@@ -3556,12 +3556,12 @@ cmd_open() {
     hblock) _op=https://github.com/hectorm/hblock ;;
     hagezi) _op=https://github.com/hagezi/dns-blocklists ;;
     inter) _op=https://github.com/rsms/inter ;;
-    *) reply false invalid_link '❓ Unknown link.'; return 0 ;;
+    *) reply false invalid_link '❓ 未知链接。'; return 0 ;;
   esac
   if open_url "$_op"; then
-    reply true opened '🌐 Opening in your browser…'
+    reply true opened '🌐 正在浏览器中打开…'
   else
-    reply false open_failed "❌ Couldn’t open your browser. Visit $_op manually."
+    reply false open_failed "❌ 无法打开浏览器，请手动访问 $_op。"
   fi
 }
 
@@ -3627,7 +3627,7 @@ dispatch() {
     open) cmd_open "${2:-}" ;;
     ping) reply true pong '' ;;
     help | -h | --help) cmd_help ;;
-    *) reply false unknown_command '❓ Unknown command. Run help to see what is available.' ;;
+    *) reply false unknown_command '❓ 未知命令。运行 help 查看可用命令。' ;;
   esac
 }
 
@@ -3704,12 +3704,12 @@ server_stop() {
   if pid_alive "$_ss_h" && pid_is_httpd_for_run "$_ss_h"; then
     kill "$_ss_h" 2>/dev/null
   elif pid_alive "$_ss_h"; then
-    log WARN "Ignoring stale WebUI httpd pid $_ss_h: cmdline does not match this run directory"
+    log WARN "忽略过期的 WebUI httpd 进程 $_ss_h：命令行与当前运行目录不匹配"
   fi
   if pid_alive "$_ss_w" && pid_is_hostkeeper_serve "$_ss_w"; then
     kill "$_ss_w" 2>/dev/null
   elif pid_alive "$_ss_w"; then
-    log WARN "Ignoring stale WebUI watchdog pid $_ss_w: cmdline does not match hostkeeper _serve"
+    log WARN "忽略过期的 WebUI 守护进程 $_ss_w：命令行与 hostkeeper _serve 不匹配"
   fi
   server_cleanup
 }
@@ -3724,7 +3724,7 @@ serve_main() {
   spawned
   _sv_s=
   trap 'kill "$_sv_h" $_sv_s 2>/dev/null; server_cleanup; exit 0' TERM INT HUP
-  log INFO "Local WebUI server started on 127.0.0.1:$PORT"
+  log INFO "本地 WebUI 服务已启动：127.0.0.1:$PORT"
   while kill -0 "$_sv_h" 2>/dev/null; do
     sleep 15 &
     _sv_s=$!
@@ -3738,7 +3738,7 @@ serve_main() {
     read -r _sv_l < "$RUND/last_request"
     is_num "$_sv_l" || continue
     if [ $(($(date +%s) - _sv_l)) -ge "$IDLE_LIMIT" ]; then
-      log INFO "Local WebUI server stopped after 10 minutes of inactivity"
+      log INFO "本地 WebUI 服务在 10 分钟无活动后已停止"
       kill "$_sv_h" 2>/dev/null
       break
     fi
@@ -3819,38 +3819,38 @@ action_main() {
     *) _ac_ksu=0 ;;
   esac
   if ! httpd_available; then
-    printf '%s\n' "❌ BusyBox httpd isn’t available on this device, so the local WebUI server can’t start."
+    printf '%s\n' "❌ 此设备没有 BusyBox httpd，本地 WebUI 服务无法启动。"
     if [ "$_ac_ksu" = 1 ]; then
-      printf '💡 Use the WebUI button on the HostKeeper card instead.\n'
+      printf '💡 请改用 HostKeeper 卡片上的 WebUI 按钮。\n'
     else
-      printf '💡 KsuWebUI, MMRL or WebUI X can open the HostKeeper WebUI without the local server.\n'
+      printf '💡 KsuWebUI、MMRL 或 WebUI X 可在不启动本地服务的情况下打开 HostKeeper WebUI。\n'
     fi
-    log ERROR "Local WebUI server unavailable: BusyBox httpd was not found"
+    log ERROR "本地 WebUI 服务不可用：未找到 BusyBox httpd"
     return 0
   fi
   if server_running; then
     read -r _ac_t < "$RUND/token"
     touch_activity
-    printf '♻️ The WebUI server is already running — reopening it.\n'
+    printf '♻️ WebUI 服务已在运行，正在重新打开。\n'
   else
     server_stop
     if port_listening; then
-      printf '❌ Port %s is already in use by another app.\n' "$PORT"
-      printf '💡 Close that app or reboot, then press Action again.\n'
-      log ERROR "Port $PORT is already in use by another app; the WebUI server was not started"
+      printf '❌ 端口 %s 已被其他应用占用。\n' "$PORT"
+      printf '💡 请关闭该应用或重启设备，然后再次点击 Action。\n'
+      log ERROR "端口 $PORT 已被其他应用占用，WebUI 服务未启动"
       return 0
     fi
-    printf '🚀 Starting the local WebUI server…\n'
+    printf '🚀 正在启动本地 WebUI 服务…\n'
     if ! server_prepare; then
       server_cleanup
-      printf '%s\n' "❌ Couldn’t prepare the WebUI files. Please try again."
-      log ERROR "Could not prepare the WebUI server files"
+      printf '%s\n' "❌ 无法准备 WebUI 文件，请重试。"
+      log ERROR "无法准备 WebUI 服务文件"
       return 0
     fi
     if ! spawn "$RUND/server.out" _serve; then
       server_stop
-      printf '❌ The WebUI server failed to start. Please try again.\n'
-      log ERROR "The WebUI server process did not start"
+      printf '❌ WebUI 服务启动失败，请重试。\n'
+      log ERROR "WebUI 服务进程未能启动"
       return 0
     fi
     _ac_i=0
@@ -3860,22 +3860,22 @@ action_main() {
     done
     if ! port_listening; then
       server_stop
-      printf '❌ The WebUI server failed to start. Please try again.\n'
-      log ERROR "The WebUI server did not start listening on port $PORT"
+      printf '❌ WebUI 服务启动失败，请重试。\n'
+      log ERROR "WebUI 服务未在端口 $PORT 开始监听"
       return 0
     fi
     read -r _ac_t < "$RUND/token"
-    printf '✅ Server running at http://127.0.0.1:%s (this device only)\n' "$PORT"
-    printf '🔐 Protected with a one-time session token\n'
+    printf '✅ 服务已运行：http://127.0.0.1:%s（仅本机可访问）\n' "$PORT"
+    printf '🔐 已使用一次性会话令牌保护\n'
   fi
   _ac_u="http://127.0.0.1:$PORT/#t=$_ac_t"
-  printf '🌐 Opening your browser…\n'
+  printf '🌐 正在打开浏览器…\n'
   if ! open_url "$_ac_u"; then
-    printf '%s\n%s\n' "⚠️ Couldn’t open a browser automatically. Open this address manually:" "$_ac_u"
+    printf '%s\n%s\n' "⚠️ 无法自动打开浏览器，请手动访问以下地址：" "$_ac_u"
   fi
-  printf '⏱️ The server stops by itself after 10 minutes without activity.\n'
+  printf '⏱️ 服务在 10 分钟无活动后会自动停止。\n'
   if [ "$_ac_ksu" = 1 ]; then
-    printf '💡 Tip: the WebUI button on the HostKeeper card opens the same interface inside %s.\n' "$MGR_NAME"
+    printf '💡 提示：点击 HostKeeper 卡片上的 WebUI 按钮，也能在 %s 中打开同一界面。\n' "$MGR_NAME"
   fi
   printf '\n'
 }
@@ -3945,11 +3945,11 @@ setup_main() {
         C_SETUP=failed
         cfg_save
         set_description
-        log ERROR "The first download failed after 5 attempts; open the WebUI to retry"
+        log ERROR "首次下载在 5 次尝试后失败，请打开 WebUI 重试"
       fi
       return 0
     fi
-    log WARN "First download attempt $_su_try failed; retrying later"
+    log WARN "首次下载第 $_su_try 次尝试失败，稍后重试"
     sleep $((30 * _su_try))
     _su_try=$((_su_try + 1))
   done
@@ -3977,7 +3977,7 @@ sched_exit() {
   fi
   lock_drop_if_mine "$LOCKD"
   [ "$(cat "$SCHEDPID" 2>/dev/null)" = "$$" ] && rm -f "$SCHEDPID"
-  log INFO "Auto-update scheduler stopped"
+  log INFO "自动更新调度器已停止"
   exit 0
 }
 
@@ -3989,7 +3989,7 @@ sched_main() {
   spawned
   _sm_s=
   trap 'sched_exit' TERM INT HUP
-  log INFO "Auto-update scheduler started"
+  log INFO "自动更新调度器已启动"
   wait_boot
   while :; do
     _sm_p=
@@ -3998,13 +3998,13 @@ sched_main() {
     cfg_load
     [ "$C_AUTO" -gt 0 ] || break
     if sched_due && lock_take "$LOCKD"; then
-      log INFO "Auto-update: checking for new list versions"
+      log INFO "自动更新：正在检查新的列表版本"
       op_begin auto "$C_LIST"
       if run_job auto "$C_LIST" "$C_ADDONS"; then
         rm -f "$SCHEDRETRY"
       else
         echo $(($(now) + 3600)) > "$SCHEDRETRY"
-        log WARN "Auto-update didn’t finish; trying again in about an hour"
+        log WARN "自动更新未完成，约一小时后重试"
       fi
       pl_cleanup
       lock_drop "$LOCKD"
@@ -4015,7 +4015,7 @@ sched_main() {
     _sm_s=
   done
   [ "$(cat "$SCHEDPID" 2>/dev/null)" = "$$" ] && rm -f "$SCHEDPID"
-  log INFO "Auto-update scheduler stopped"
+  log INFO "自动更新调度器已停止"
 }
 
 boot_main() {
@@ -4032,30 +4032,30 @@ boot_main() {
   if [ ! -f "$CFG" ]; then
     C_SETUP=pending
     cfg_save
-    log WARN "Settings were missing; the default list will be downloaded again"
+    log WARN "设置缺失，将重新下载默认列表"
   elif [ "$C_SETUP" = failed ]; then
     C_SETUP=pending
     cfg_save
   elif [ "$C_SETUP" = ready ] && ! sources_ready; then
     C_SETUP=pending
     cfg_save
-    log WARN "A cached list was missing; it will be downloaded again"
+    log WARN "缓存列表缺失，将重新下载"
   fi
   repair_hosts deep
   ensure_mounted
   set_description
   cfg_load
   if [ "$C_SETUP" = pending ]; then
-    log INFO "Boot: waiting for network to download $L_NAME"
-    spawn "$RUND/setup.out" _setup || log ERROR "Could not start the first-boot download"
+    log INFO "开机：等待网络以下载 $L_NAME"
+    spawn "$RUND/setup.out" _setup || log ERROR "无法启动首次开机下载"
   elif [ "$C_ENABLED" = 1 ]; then
     applied_state
-    log INFO "Boot: $L_NAME active with $(fmt_num "$C_DOMAINS") domains ($R_APPLIED)"
+    log INFO "开机：$L_NAME 已生效，共 $(fmt_num "$C_DOMAINS") 个域名（$R_APPLIED）"
   else
-    log INFO "Boot: blocker is disabled"
+    log INFO "开机：拦截处于关闭状态"
   fi
   if [ "$C_AUTO" -gt 0 ]; then
-    spawn "$RUND/sched.out" _sched || log ERROR "Could not start the auto-update scheduler"
+    spawn "$RUND/sched.out" _sched || log ERROR "无法启动自动更新调度器"
   fi
 }
 
@@ -4090,7 +4090,7 @@ uninstall_main() {
     pid_alive "$_un_p" && kill_tree "$_un_p"
   done
   if ! restore_original_for_uninstall; then
-    log ERROR "Uninstall could not restore the original /system/etc/hosts; module data was kept for recovery"
+    log ERROR "卸载时无法恢复原始 /system/etc/hosts，已保留模块数据以便恢复"
     return 1
   fi
   rm -rf "$DATA"
@@ -4104,51 +4104,51 @@ install_main() {
   rm -rf "$LOCKD" "$METALOCK" "$STAGED" 2>/dev/null
   rm -f "$RUND"/spawn.* "$RUND/manager" "$METAD"/*.busy 2>/dev/null
   detect_manager
-  printf '🔎 Checking your setup…\n'
+  printf '🔎 正在检查环境…\n'
   if [ -n "$MGR_VER" ]; then
-    printf '✅ Root manager: %s (%s)\n' "$MGR_NAME" "$MGR_VER"
+    printf '✅ Root 管理器：%s（%s）\n' "$MGR_NAME" "$MGR_VER"
   else
-    printf '✅ Root manager: %s\n' "$MGR_NAME"
+    printf '✅ Root 管理器：%s\n' "$MGR_NAME"
   fi
   if [ "$HK_BB" != none ]; then
-    printf '✅ BusyBox: %s\n' "$HK_BB"
+    printf '✅ BusyBox：%s\n' "$HK_BB"
   else
-    printf '⚠️ BusyBox not found — falling back to system tools\n'
+    printf '⚠️ 未找到 BusyBox，回退到系统工具\n'
   fi
   if dl_detect; then
     if [ "$DL_TOOL" = curl ]; then
-      if [ "$DL_GZ" = 1 ]; then printf '✅ Downloader: curl (compressed transfers)\n'; else printf '✅ Downloader: curl\n'; fi
+      if [ "$DL_GZ" = 1 ]; then printf '✅ 下载工具：curl（启用压缩传输）\n'; else printf '✅ 下载工具：curl\n'; fi
     else
-      printf '✅ Downloader: BusyBox wget\n'
+      printf '✅ 下载工具：BusyBox wget\n'
     fi
   else
-    printf '❌ No downloader found (curl or BusyBox wget)\n'
+    printf '❌ 未找到下载工具（curl 或 BusyBox wget）\n'
   fi
   if ! httpd_available; then
-    printf '%s\n' "⚠️ BusyBox httpd not found — the Action button can’t open the WebUI in a browser"
+    printf '%s\n' "⚠️ 未找到 BusyBox httpd，Action 按钮无法在浏览器中打开 WebUI"
   fi
-  log INFO "Installing HostKeeper $HK_VER with $MGR_NAME $MGR_VER"
+  log INFO "正在安装 HostKeeper $HK_VER，管理器为 $MGR_NAME $MGR_VER"
 
-  printf '\n🧩 Looking for other hosts blockers…\n'
+  printf '\n🧩 正在检查其他 hosts 拦截模块…\n'
   _in_cf=0
   conflicts_scan
   for _in_m in $R_CONF; do
     _in_cf=1
     if [ "$_in_m" = hosts ]; then
-      printf '%s\n' "⚠️ Systemless hosts is enabled. Turn it off in your root manager (it’s the \"hosts\" module)."
+      printf '%s\n' "⚠️ 系统 hosts 模块（Systemless hosts）已启用，请在 root 管理器中关闭它。"
     else
-      printf '⚠️ The module "%s" also replaces /system/etc/hosts. Disable it to avoid conflicts.\n' "$_in_m"
+      printf '⚠️ 模块“%s”也会替换 /system/etc/hosts，请停用它以避免冲突。\n' "$_in_m"
     fi
-    log WARN "Conflicting hosts module found: $_in_m"
+    log WARN "发现冲突的 hosts 模块：$_in_m"
   done
   if [ -d /data/data/org.adaway ]; then
     _in_cf=1
-    printf '%s\n' "⚠️ AdAway is installed. Don’t use its root or systemless mode together with HostKeeper."
-    log WARN "AdAway app detected"
+    printf '%s\n' "⚠️ 检测到 AdAway，请不要同时启用它的 root 或 systemless 模式，以免与 HostKeeper 冲突。"
+    log WARN "检测到 AdAway 应用"
   fi
-  [ "$_in_cf" = 0 ] && printf '✅ No conflicting hosts blockers found\n'
+  [ "$_in_cf" = 0 ] && printf '✅ 未发现冲突的 hosts 拦截模块\n'
 
-  printf '\n🧹 Cleaning up older versions…\n'
+  printf '\n🧹 正在清理旧版本…\n'
   _in_old=
   _in_legacy=0
   if [ -f "$DATA/config.txt" ]; then
@@ -4166,28 +4166,28 @@ install_main() {
   migrate_data keep
   rm -f "$BACKUPD/hosts.1" "$BACKUPD/hosts.2" "$BACKUPD/hosts.3" 2>/dev/null
   if [ -n "$_in_old" ]; then
-    printf '✅ Removed legacy HostKeeper files:%s\n' "$_in_old"
-    log INFO "Removed legacy files:$_in_old"
+    printf '✅ 已移除旧版 HostKeeper 文件：%s\n' "$_in_old"
+    log INFO "已移除旧版文件：$_in_old"
   fi
   if [ "$_in_v1" = 1 ]; then
-    printf '✅ Migrated your cached blocklist to the current layout\n'
+    printf '✅ 已将缓存列表迁移到当前布局\n'
   fi
-  [ -z "$_in_old" ] && [ "$_in_v1" = 0 ] && printf '✅ Nothing to clean up\n'
+  [ -z "$_in_old" ] && [ "$_in_v1" = 0 ] && printf '✅ 没有需要清理的内容\n'
   if [ "$_in_legacy" -gt 1 ] 2>/dev/null; then
-    printf 'ℹ️ Your previous list is no longer available, so HostKeeper starts with StevenBlack Main\n'
+    printf 'ℹ️ 之前的列表已不可用，HostKeeper 将使用 StevenBlack Main 启动\n'
   fi
 
-  printf '\n💾 Backing up the original hosts file…\n'
+  printf '\n💾 正在备份原始 hosts 文件…\n'
   if [ -s "$ORIGHOSTS" ]; then
-    printf '✅ A copy of the original hosts file is already saved\n'
+    printf '✅ 原始 hosts 文件的副本已保存\n'
   elif [ -f "$SYS_HOSTS" ] && [ "$(wc -l < "$SYS_HOSTS")" -le 30 ] && ! grep -q '^0\.0\.0\.0 ' "$SYS_HOSTS" 2>/dev/null; then
-    cp -f "$SYS_HOSTS" "$ORIGHOSTS" && printf '✅ Saved a copy of your original hosts file\n'
+    cp -f "$SYS_HOSTS" "$ORIGHOSTS" && printf '✅ 已保存原始 hosts 文件的副本\n'
   else
     printf '127.0.0.1 localhost\n::1 ip6-localhost\n' > "$ORIGHOSTS"
-    printf '%s\n' "ℹ️ The current hosts file comes from a blocker, so Android’s default hosts was saved instead"
+    printf '%s\n' "ℹ️ 当前 hosts 文件来自其他拦截模块，因此已改为保存 Android 默认 hosts"
   fi
 
-  printf '\n📋 Preparing your blocklist…\n'
+  printf '\n📋 正在准备拦截列表…\n'
   cfg_load
   _in_keep=0
   if [ -f "$CFG" ] && [ "$C_SETUP" = ready ] && sources_ready; then
@@ -4200,16 +4200,16 @@ install_main() {
         cfg_save
         [ "$C_ENABLED" = 1 ] && stats_commit
         if [ "$C_ENABLED" = 1 ]; then
-          printf '♻️ Keeping your current setup: %s • %s domains\n' "$_in_name" "$(fmt_num "$CH_COUNT")"
+          printf '♻️ 保留当前设置：%s • %s 个域名\n' "$_in_name" "$(fmt_num "$CH_COUNT")"
         else
-          printf '♻️ Keeping your current setup: %s (blocker disabled)\n' "$_in_name"
+          printf '♻️ 保留当前设置：%s（拦截已关闭）\n' "$_in_name"
         fi
         set -- $C_ADDONS
-        [ "$#" -gt 0 ] && printf '✅ %s %s kept\n' "$#" "$(plural "$#" add-on add-ons)"
+        [ "$#" -gt 0 ] && printf '✅ 已保留 %s 个附加列表\n' "$#"
         count_lines "$ALLOWF"; _in_r=$R_LINES
         count_lines "$BLOCKF"; _in_r=$((_in_r + R_LINES))
-        [ "$_in_r" -gt 0 ] && printf '✅ %s domain %s kept\n' "$_in_r" "$(plural "$_in_r" rule rules)"
-        log INFO "Kept the existing setup: $_in_name"
+        [ "$_in_r" -gt 0 ] && printf '✅ 已保留 %s 条域名规则\n' "$_in_r"
+        log INFO "已保留现有设置：$_in_name"
       fi
     fi
     rm -f "$HOSTSD/.hosts.hknew" "$TMPD/compile.stats"
@@ -4222,14 +4222,14 @@ install_main() {
     _in_name=$L_NAME
     if [ "${BOOTMODE:-true}" != false ] && pipeline setup "$C_LIST" "$C_ADDONS"; then
       if [ "$_in_enabled" = 1 ]; then
-        printf '✅ Hosts file ready: %s domains blocked after reboot\n' "$(fmt_num "$PL_DOMAINS")"
+        printf '✅ hosts 文件已就绪：重启后将拦截 %s 个域名\n' "$(fmt_num "$PL_DOMAINS")"
       else
-        printf '✅ Blocklist sources are ready; blocking stays disabled\n'
+        printf '✅ 拦截列表源已就绪，拦截仍保持关闭\n'
       fi
     else
       if [ "${BOOTMODE:-true}" = false ]; then
-        printf '⚠️ Installing from recovery: no network, so the list downloads after reboot\n'
-        log WARN "Installed from recovery; the first download is postponed"
+        printf '⚠️ 从 Recovery 安装：没有网络，列表将在重启后下载\n'
+        log WARN "从 Recovery 安装，首次下载已推迟"
       else
         printf '⚠️ %s\n' "${PL_MSG#* }"
       fi
@@ -4237,13 +4237,13 @@ install_main() {
         cfg_load
         C_SETUP=pending
         cfg_save
-        printf '🧩 Wrote a clean localhost-only hosts file for now\n'
-        printf '%s\n' "🔁 HostKeeper will retry automatically after reboot, once you’re online"
-        log WARN "The first download failed during install; it will be retried after reboot"
+        printf '🧩 已暂时写入仅含 localhost 的干净 hosts 文件\n'
+        printf '%s\n' "🔁 联网后，HostKeeper 将在重启后自动重试"
+        log WARN "安装期间首次下载失败，将在重启后重试"
       else
         _in_fail=1
-        printf '❌ Could not write a clean hosts file.\n'
-        log ERROR "Install could not write a clean hosts file"
+        printf '❌ 无法写入干净的 hosts 文件。\n'
+        log ERROR "安装时无法写入干净的 hosts 文件"
       fi
     fi
   fi
@@ -4251,34 +4251,34 @@ install_main() {
   mark_pending
   if [ "$_in_fail" = 0 ] && ! hosts_sane "$HOSTS"; then
     _in_fail=1
-    log ERROR "Install finished without a sane hosts file"
+    log ERROR "安装结束时没有可用的 hosts 文件"
   fi
   if [ "$_in_fail" != 0 ]; then
-    printf '\n❌ HostKeeper installation failed. The previous hosts file was left intact when possible.\n'
-    log ERROR "HostKeeper installation failed; setup is incomplete"
+    printf '\n❌ HostKeeper 安装失败。在可能的情况下已保留之前的 hosts 文件。\n'
+    log ERROR "HostKeeper 安装失败，初始化未完成"
     return 1
   fi
   set_description
 
   printf '\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'
-  printf '🎉 HostKeeper %s is installed!\n' "$HK_VER"
-  printf '🔁 Reboot your device to activate it.\n'
-  printf '⚡ Features: live apply, add-on lists, auto-update and more.\n'
+  printf '🎉 HostKeeper %s 已安装！\n' "$HK_VER"
+  printf '🔁 请重启设备以启用。\n'
+  printf '⚡ 功能：即时生效、附加列表、自动更新等。\n'
   case $MGR_NAME in
     KernelSU* | SukiSU*)
-      printf '🔗 If a metamodule (e.g. meta-overlayfs) is installed, the module system folder is mounted. Without one, HostKeeper tries a direct bind and reports the mount state in Diagnostics.\n'
-      printf '🖥️ After reboot, tap the WebUI button on the HostKeeper card.\n'
-      printf '▶️ The Action button opens the same WebUI in your browser.\n'
+      printf '🔗 如果安装了 metamodule（例如 meta-overlayfs），模块的 system 目录会被挂载；如果没有，HostKeeper 会尝试直接 bind，并在诊断中报告挂载状态。\n'
+      printf '🖥️ 重启后，点击 HostKeeper 卡片上的 WebUI 按钮。\n'
+      printf '▶️ Action 按钮会在浏览器中打开同一 WebUI。\n'
       ;;
     APatch)
-      printf '🔗 APatch applies the module through its OverlayFS; HostKeeper checks the mount at every boot.\n'
-      printf '🖥️ After reboot, tap the WebUI button on the HostKeeper card.\n'
-      printf '▶️ The Action button opens the same WebUI in your browser.\n'
+      printf '🔗 APatch 通过其 OverlayFS 应用模块；HostKeeper 会在每次开机时检查挂载。\n'
+      printf '🖥️ 重启后，点击 HostKeeper 卡片上的 WebUI 按钮。\n'
+      printf '▶️ Action 按钮会在浏览器中打开同一 WebUI。\n'
       ;;
     *)
-      printf '▶️ After reboot, tap the Action button on the HostKeeper card —\n'
-      printf '   the WebUI opens in your browser.\n'
-      printf '💡 KsuWebUI, MMRL or WebUI X can also open the WebUI.\n'
+      printf '▶️ 重启后，点击 HostKeeper 卡片上的 Action 按钮——\n'
+      printf '   WebUI 会在浏览器中打开。\n'
+      printf '💡 也可以使用 KsuWebUI、MMRL 或 WebUI X 打开 WebUI。\n'
       ;;
   esac
   printf '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n'
