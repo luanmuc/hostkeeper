@@ -2,8 +2,8 @@
   'use strict';
 
   const MOD = '/data/adb/modules/hostkeeper';
-  const VERSION = 'v1.0.7';
-  const VERSION_CODE = 8;
+  const VERSION = 'v1.0.8';
+  const VERSION_CODE = 9;
   const RULE_MAX = 1000;
   const LEVEL = { green: '🟢', blue: '🔵', yellow: '🟡', orange: '🟠', red: '🔴' };
   const STEPS = [
@@ -1085,6 +1085,12 @@
       rows[id].sw.disabled = addonsLocked();
       rows[id].del.disabled = busy;
     });
+    const diag = $('act-diag');
+    if (diag) {
+      // 任何旧请求/旧缓存残留的 disabled 都在状态刷新时清掉。
+      diag.disabled = false;
+      diag.setAttribute('aria-disabled', 'false');
+    }
     const add = $('custom-add');
     if (add) {
       const list = S.lists;
@@ -1600,6 +1606,8 @@
         S.opView = true;
         handleOp(r.data.op);
         schedulePoll(400);
+      } else if (r.ok && r.code === 'enabled' && r.data && r.data.live === false) {
+        toast(r.message + ' 首次安装或系统尚未挂载时需要重启一次；重启后切换可即时生效。', 'warn');
       } else {
         toast(r.message, r.ok ? 'ok' : 'err');
       }
@@ -1769,6 +1777,11 @@
 
   async function showDiag() {
     // 不再用 disabled 锁死按钮：即使上一次请求卡住，重开窗口/再点也能重新发起。
+    const btn = $('act-diag');
+    if (btn) {
+      btn.disabled = false;
+      btn.setAttribute('aria-disabled', 'false');
+    }
     const seq = (showDiag.seq = (showDiag.seq || 0) + 1);
     Modal.show({ icon: '🩺', title: '健康检查', body: [para('正在检查 hosts 文件、挂载状态、列表和网络…', 'center')], view: 'diag', actions: [] });
     let r;
@@ -2437,7 +2450,13 @@
     $('act-update').addEventListener('click', runUpdate);
     $('act-status').addEventListener('click', showStatusDialog);
     $('act-toggle').addEventListener('click', toggleBlocker);
-    $('act-diag').addEventListener('click', showDiag);
+    // 健康检查用文档级委托：即使某个 WebView 没有绑定到按钮本身，点击仍能被捕获。
+    document.addEventListener('click', function (e) {
+      const t = e.target && e.target.closest ? e.target.closest('#act-diag') : null;
+      if (!t) return;
+      e.preventDefault();
+      showDiag();
+    }, true);
     $('act-settings').addEventListener('click', showSettings);
     $('act-repair').addEventListener('click', repairFlow);
     $('logs-refresh').addEventListener('click', () => { S.logSig = ''; loadLogs(); });

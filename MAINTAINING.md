@@ -124,6 +124,7 @@ grep -nE '?v=|id="ver"' webroot/index.html
 - 规则导入等多批次操作必须 `try/finally` 释放 `S.syncBusy`，单批失败要 break 并显示错误。
 - `scripts/check.sh` 校验 `apiTimeout`、健康检查超时、过期响应保护、自定义列表恢复和规则导入 busy 收口。
 - 健康检查的后端网络探测 `cmd_diag()` 使用 `DL_MAX_TIME=20` 限制单次 peek；前端 `showDiag()` 超时为 25 秒，后端应先返回失败原因而不是让前端只看到泛化超时。
+- `#act-diag` 使用 document 级 `closest(
 
 ## 9. 管理器适配与检测边界
 

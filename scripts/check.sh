@@ -93,6 +93,8 @@ grep -qF 'function apiTimeout' webroot/app.js && ok 'UI request timeout helper p
 grep -qF "apiTimeout('diag', [], 25000)" webroot/app.js && ok 'health check uses 25s timeout' || bad 'health check does not use 25s timeout'
 grep -qF 'DL_MAX_TIME=20' hostkeeper.sh && ok 'diag network peek is time-bounded' || bad 'diag network peek is unbounded'
 grep -qF 'showDiag.seq' webroot/app.js && ok 'health check has stale-response guard' || bad 'health check has no stale-response guard'
+grep -qF "closest('#act-diag')" webroot/app.js && ok 'health check has delegated click fallback' || bad 'health check only relies on direct click binding'
+grep -qF 'diag.disabled = false' webroot/app.js && ok 'health check button is cleared on refresh' || bad 'health check button can stay disabled'
 grep -qF 'add.disabled = busy || reached;' webroot/app.js && ok 'custom add re-enables after busy' || bad 'custom add can stay disabled after busy'
 grep -qF 'r = await sendImport(p.allow, p.block, mode);' webroot/app.js && ok 'rule import has guarded busy release' || bad 'rule import busy release not guarded'
 grep -qF "L_LEVELTXT='均衡'" hostkeeper.sh && ok 'list level text is Chinese' || bad 'list level text is not Chinese'

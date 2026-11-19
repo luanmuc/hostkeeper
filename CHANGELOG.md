@@ -1,3 +1,13 @@
+## v1.0.8（2026-11-20）
+
+- 修复：`#act-diag` 改为文档级点击委托，点击图标/文字子元素也能触发健康检查。
+- 修复：`applyBusy()` 每次状态刷新强制清除 `#act-diag` 的 `disabled` / `aria-disabled`，旧请求不再锁死按钮。
+- 修复：WebUI 资源 query 升级 `?v=1.0.8`，避免同版本重复安装时 WebView 继续使用旧 `app.js`。
+- 修复：主开关首次开启返回 `live:false` 时提示“首次安装/未挂载需重启一次，之后可即时生效”。
+- 验证：UI 22/22、操作按钮 9/9、Bridge 3/3、`check.sh` 全绿、镜像回退成功。
+- 版本：v1.0.7 → v1.0.8，versionCode 8 → 9。
+- 状态：本地待推送；待设备侧复测健康检查。
+
 ## v1.0.7（2026-11-20）
 
 - 下载：修复 `curl: (35) Recv failure: Connection reset by peer` 导致首次列表无法下载的问题
