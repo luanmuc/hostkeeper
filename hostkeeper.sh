@@ -19,8 +19,8 @@ umask 022
 PATH=/system/bin:/system/xbin:/vendor/bin:${PATH:-/bin}
 export PATH
 
-HK_VER=v1.1.0
-HK_VCODE=11
+HK_VER=v1.1.1
+HK_VCODE=12
 SELF=$0
 case $SELF in /*) ;; *) SELF=$(pwd)/$SELF ;; esac
 MODDIR=${HK_MODDIR:-${SELF%/*}}
@@ -35,6 +35,7 @@ SUMF=$DATA/hosts.sum
 STATF=$DATA/stats
 RULESD=$DATA/rules
 ALLOWF=$RULESD/allow.list
+ALLOWD=$MODDIR/allow-default.list
 BLOCKF=$RULESD/block.list
 CACHED=$DATA/cache
 LISTSD=$CACHED/lists
@@ -641,6 +642,28 @@ ensure_dirs() {
   chmod 0700 "$DATA" 2>/dev/null
   [ -f "$ALLOWF" ] || : > "$ALLOWF"
   [ -f "$BLOCKF" ] || : > "$BLOCKF"
+  allow_seed
+}
+
+allow_seed() {
+  # 内置放行清单合并。只写入域名规则行，注释/空行不进入 allow.list；
+  # 空文件补齐全部规则，已有内容只补缺失条目，用户自定义规则永远保留。
+  [ -f "$ALLOWD" ] || return 0
+  [ -f "$ALLOWF" ] || : > "$ALLOWF" 2>/dev/null
+  _as_n=0
+  while IFS= read -r _as_l; do
+    case $_as_l in '' | '#'*) continue ;; esac
+    if ! grep -qxF -- "$_as_l" "$ALLOWF" 2>/dev/null; then
+      if [ -s "$ALLOWF" ] && [ -n "$(tail -c 1 "$ALLOWF" 2>/dev/null)" ]; then
+        printf '\n' >> "$ALLOWF" 2>/dev/null
+      fi
+      printf '%s\n' "$_as_l" >> "$ALLOWF" 2>/dev/null && _as_n=$((_as_n + 1))
+    fi
+  done < "$ALLOWD"
+  if [ "$_as_n" -gt 0 ] && command -v log >/dev/null 2>&1; then
+    log I "allow_seed: 补入 $_as_n 条内置放行"
+  fi
+  return 0
 }
 
 log() {

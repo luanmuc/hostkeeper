@@ -1,6 +1,6 @@
 id=hostkeeper
 name=HostKeeper
-version=v1.1.0
-versionCode=11
+version=v1.1.1
+versionCode=12
 author=luanmuc
 description=系统级 hosts 广告拦截模块（自用）。静态 hosts，不跑 VPN；自动更新调度器按设置运行。支持 WebUI 管理与自定义规则。

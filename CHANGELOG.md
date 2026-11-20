@@ -1,3 +1,11 @@
+## v1.1.1（2026-11-20）
+
+- 内置放行清单：新增随包文件 `allow-default.list`，覆盖豆包定制聚合音源（lx-music-mobile）全链域名——音乐平台主站与 API（`*.163.com` / `*.qq.com` / `*.kuwo.cn` / `*.kugou.com` / `*.migu.cn`）、播放 CDN（`*.126.net`）、第三方聚合与中转源（`*.oiapi.net` / `*.lzmhhh.com` / `*.zddyr.top` / `*.haitangw.cc` / `*.haitangw.net` / `*.gdstudio.xyz` / `*.onrender.com` / `*.xcvts.cn` / `*.dpdns.org` / `*.lingchuan.com` / `*.wwwweb.top`），合计 17 条规则。
+- 合并策略：`ensure_dirs()` 调用新增的 `allow_seed()`。只写入域名规则行，注释/空行不进入 `allow.list`；空文件补齐 17 条，已有内容只补缺失条目并按行去重（`grep -qxF --`），用户自定义规则永不覆盖；补入条数写入日志。
+- 版本：v1.1.0 → v1.1.1，versionCode 11 → 12；`HK_VER` / `HK_VCODE` 兜底、`customize.sh` 兜底、`app.js` 的 VERSION / VERSION_CODE、`index.html` 五处版本串与三处 `?v=` 全部同步。
+- 验证：`sh -n hostkeeper.sh` 通过；`check.sh` 全绿（含 HK_VER / HK_VCODE 契约项）；`allow_seed` 回归 10/10（全新设备只写 17 条规则、无注释/空行、用户行保留、重复执行幂等、内置条目去重、缺文件静默、`allow.list` 末尾缺换行不粘连）；通配实测 6 正例放行 / 3 反例拦截。
+- 状态：版本提交见仓库 `main`；发布状态以 GitHub Releases 页为准。
+
 ## v1.1.0（2026-11-20）
 
 - 首次安装向导：新增“下载主列表 → 检查挂载 → 重启确认”三步卡片；按 `setup` / `reboot` / `applied` 状态自动切换当前步骤，明确“向导不会自动重启”，可“稍后再说”。
@@ -18,7 +26,7 @@
 - 文案：待重启状态改为“待重启完成挂载”；主开关首次开启 toast、状态弹窗和 hero 说明明确“首次安装通常重启一次，之后切换可即时生效”。
 - 版本：v1.0.8 → v1.0.9，versionCode 9 → 10；WebUI 三处资源 query 同步 `?v=1.0.9`。
 - 验证：UI 22/22、操作按钮 13/13、Bridge 3/3、`check.sh` 全绿；设备侧待复测。
-- 状态：本地待提交；未推送。
+- 状态：版本提交见仓库 `main`；发布状态以 GitHub Releases 页为准。
 
 ## v1.0.8（2026-11-20）
 

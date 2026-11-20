@@ -1,0 +1,28 @@
+# HostKeeper 内置放行清单 —— 豆包定制音源全链
+# 与 lx-music-mobile 聚合音源（backend-api）同步维护：新增音源时，
+# 把其 API 域名与播放 CDN 域名一并补到这里，避免被第三方拦截列表误杀。
+# 格式：以 *. 开头 = 后缀通配（含所有子域）；其余 = 精确匹配。
+# 本清单只补进 allow.list，绝不覆盖用户自己添加的规则。
+
+# —— 音乐平台主站与 API ——
+*.163.com
+*.qq.com
+*.kuwo.cn
+*.kugou.com
+*.migu.cn
+
+# —— 播放 CDN ——
+*.126.net
+
+# —— 第三方聚合 / 中转源 ——
+*.oiapi.net
+*.lzmhhh.com
+*.zddyr.top
+*.haitangw.cc
+*.haitangw.net
+*.gdstudio.xyz
+*.onrender.com
+*.xcvts.cn
+*.dpdns.org
+*.lingchuan.com
+*.wwwweb.top

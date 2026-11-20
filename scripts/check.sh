@@ -112,7 +112,7 @@ else
   ok 'no legacy English UI copy'
 fi
 
-printf '\nv1.1.0 final contract\n'
+printf '\nv1.1.1 final contract\n'
 grep -qF 'source_error_text' hostkeeper.sh && ok 'source failure text mapping present' || bad 'source failure text mapping is missing'
 grep -qF '\"altHost\":' hostkeeper.sh && ok 'list source exposes alt host' || bad 'list source alt host field is missing'
 grep -qF '\"hasAlt\":' hostkeeper.sh && ok 'list source exposes hasAlt' || bad 'list source hasAlt field is missing'
@@ -123,6 +123,14 @@ grep -qF 'DL_GUARD_PRIVATE' hostkeeper.sh && ok 'custom-list download-time priva
 grep -qF 'redirect_guard' hostkeeper.sh && ok 'custom-list non-curl downgrade is rejected' || bad 'custom-list non-curl downgrade is allowed'
 grep -qF 'private_host' hostkeeper.sh && ok 'private-host download error text present' || bad 'private-host download error text is missing'
 grep -qF "c.source.textContent = l.hasAlt ? '🔗 备源' : '🔗 单源'" webroot/app.js && ok 'list source label is compact' || bad 'list source label is too wide'
+[ -f allow-default.list ] && ok 'allow-default.list shipped' || bad 'allow-default.list is missing'
+[ "$(grep -vcE '^#|^$' allow-default.list)" -ge 17 ] && ok 'allow-default.list has at least 17 rules' || bad 'allow-default.list rules are incomplete'
+grep -qF 'ALLOWD=$MODDIR/allow-default.list' hostkeeper.sh && ok 'ALLOWD points at the shipped list' || bad 'ALLOWD path is wrong'
+grep -qF 'allow_seed' hostkeeper.sh && ok 'built-in allowlist merge function present' || bad 'allow_seed is missing'
+grep -qF '  allow_seed' hostkeeper.sh && ok 'ensure_dirs calls allow_seed' || bad 'ensure_dirs does not call allow_seed'
+grep -qF "case \$_as_l in '' | '#'*" hostkeeper.sh && ok 'allow_seed skips comments' || bad 'allow_seed may copy comments'
+grep -qF 'tail -c 1 "$ALLOWF"' hostkeeper.sh && ok 'allow_seed handles missing trailing newline' || bad 'allow_seed may concatenate rules'
+grep -qF 'allow-default.list' scripts/package.sh && ok 'packaging includes allow-default.list' || bad 'packaging misses allow-default.list'
 grep -qF "localhost | *.localhost | *.local | *.internal" hostkeeper.sh && ok 'custom list local suffix guard present' || bad 'custom list local suffix guard is missing'
 grep -qF -- '--max-redirs "${DL_MAX_REDIR:-5}"' hostkeeper.sh && ok 'download redirect count is bounded' || bad 'download redirect count is unbounded'
 grep -qF 'setup-guide' webroot/index.html && ok 'first-install setup guide markup present' || bad 'first-install setup guide is missing'
