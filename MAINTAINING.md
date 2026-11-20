@@ -9,7 +9,7 @@
 | `module.prop` | `version=` / `versionCode=` | **唯一来源**，设备端以此为准 |
 | `hostkeeper.sh` | `HK_VER=` / `HK_VCODE=`（第 22-23 行） | 仅当 module.prop 缺失时生效，运行时会被文件值覆盖 |
 | `webroot/app.js` | `VERSION` / `VERSION_CODE`（第 5-6 行） | 状态接口失败时的兜底值 |
-| `webroot/index.html` | `#ver` 品牌兜底、`#credits-ver` 页脚、3 处 `?v=` 缓存参数（第 14-15、25、178、209 行） | 页面加载后会被接口值覆盖 |
+| `webroot/index.html` | `#ver` 品牌兜底、`#credits-ver` 页脚、3 处 `?v=` 缓存参数（第 14-15、25、213、244 行） | 页面加载后会被接口值覆盖 |
 | `customize.sh` | `HK_VER` 兜底（第 4 行） | module.prop 读不到时的安装横幅兜底 |
 
 发布时上表所有值必须一致；`version=`、`HK_VER`、`VERSION` 与页面显示文本都保留 `v` 前缀。
@@ -21,11 +21,14 @@
 - 专有列表名与品牌名保留原文：StevenBlack、hBlock、HaGeZi、Xiaomi、Samsung、Huawei、OPPO、Vivo、Amazon、TikTok、Microsoft、Inter。
 - 日志级别键保留 `INFO` / `WARN` / `ERROR`，正文中文；技术路径、HTTP 状态码、进程名保留原文。
 - `scripts/check.sh` 包含中文 UI 契约；修改文案后必须同时跑 `check.sh` 与 UI 回归，防止回退成英文。
+- 首次向导、下载源状态与导出入口也纳入 `check.sh` 的 v1.1.0 契约；删除或改名这些入口时必须同步更新契约。
 
 ## 2. 列表与规则从哪里来
 
 - 内置 GitHub 列表保留原始 `raw.githubusercontent.com` 地址；`list_info()` 会为这类地址派生 `L_URL_ALT`（jsDelivr 镜像），下载时由 `dl_fetch_any()` 先试主源、失败再试镜像。
+- hBlock 只有 `https://hblock.molinero.dev/hosts` 一个源，`L_URL_ALT` 为空；不要为它伪造镜像。
 - 不要删除或替换第三方列表的原始地址与名称；镜像只是回退路径。
+- 状态接口与列表接口会输出 `listHost` / `listAltHost` / `listHasAlt`（列表为 `altHost` / `hasAlt`），WebUI 据此显示“备源”或“单源”，完整主源/备用源放在 tooltip 与状态弹窗；新增列表时要确认这些字段自然派生。
 
 - 两个源前缀在 `hostkeeper.sh` 第 92-93 行：
   - `STEVENBLACK_RAW` → StevenBlack/hosts
@@ -45,6 +48,10 @@
 | `verify_hosts_file()` / `verify_hosts_deep()` | 对指定文件/当前 hosts 做深度校验（首两行 + 域名数） |
 | `lock_take()` / `lock_drop()` / `lock_clear_stale()` | 锁获取校验、owner-only 释放、无主锁清理 |
 | `repair_hosts()` | 深度修复：缓存重建 → 候选校验 → 原子替换 → clean fallback + setup pending |
+| `source_error_text()` | 把 `M_ERR` / `DL_FAIL` 代码转成 WebUI 可读的失败原因 |
+| `is_private_ip()` / `host_resolves_private()` | 自定义列表的私网 / 保留地址防护；解析兼容 `Address:`、`Addresses:`、BusyBox `Address 1:` 与多地址续行 |
+| `renderSetup()` | 首次安装向导：下载 → 检查挂载 → 重启确认；不自动重启 |
+| `downloadText()` | 报告 / 日志的 `.txt` 导出；不支持 Blob 时回退到复制 |
 | `stage_commit()` | 缓存提交：备份、逐项 mv 检查、失败整体回滚；排除 `extras.domains` |
 | `sched_exit()` | 调度器 TERM/INT/HUP 收口：停 sleep、清 stage、释放自己的锁、删 SCHEDPID |
 | `restore_original_for_uninstall()` | 卸载前 umount 并原子恢复原始 hosts；备份缺失/失败保留数据 |
@@ -109,7 +116,7 @@ grep -nE '?v=|id="ver"' webroot/index.html
 - 会话 token 为 32 位十六进制，`/data/adb/hostkeeper/token` 权限 0600；页面用 POST body 传递，不走 URL query
 - CGI 只接受 POST（GET 一律 403）；校验 token、必须为本地 `HTTP_HOST`、`HTTP_REFERER` 为空或同源；响应带 `no-store`、`nosniff`、`DENY`、CSP 等头
 - 静态页 CSP 禁止外部脚本、对象与表单提交；样式允许 `unsafe-inline`，因为进度条用 JS 写 `style.transform`
-- 自定义列表只允许 HTTPS，下载限速/限大小；`curl` 路径强制 HTTPS 重定向，`wget` 回退拒绝 HTTP/FTP 重定向
+- 自定义列表只允许 HTTPS，下载限速/限大小；自定义列表下载前再次做私网解析，禁止跳转，且只允许 curl（`wget` 无法保证不跟随跳转）；内置列表 `curl` 最多 5 跳，`wget` 回退拒绝 HTTP/FTP 重定向
 - 数据目录 0700；WebUI 运行目录与 `cgi-bin` 也设为 0700
 - inplace 写入 hosts 时使用同目录临时文件 + `cmp` + `mv -f`，失败保留旧文件
 - 源元数据 `src_write` 使用 `.tmp` + `mv` 原子写；`stage_commit` 提交失败整体回滚

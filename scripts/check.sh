@@ -112,6 +112,26 @@ else
   ok 'no legacy English UI copy'
 fi
 
+printf '\nv1.1.0 final contract\n'
+grep -qF 'source_error_text' hostkeeper.sh && ok 'source failure text mapping present' || bad 'source failure text mapping is missing'
+grep -qF '\"altHost\":' hostkeeper.sh && ok 'list source exposes alt host' || bad 'list source alt host field is missing'
+grep -qF '\"hasAlt\":' hostkeeper.sh && ok 'list source exposes hasAlt' || bad 'list source hasAlt field is missing'
+grep -qF 'host_resolves_private' hostkeeper.sh && ok 'custom list private-host guard present' || bad 'custom list private-host guard is missing'
+grep -qF 'function emit(start, i, v)' hostkeeper.sh && ok 'nslookup address parser handles multi-address output' || bad 'nslookup address parser is too narrow'
+grep -qF 'addr && $0 ~ /^[ \t]/' hostkeeper.sh && ok 'nslookup continuation lines are parsed' || bad 'nslookup continuation lines are ignored'
+grep -qF 'DL_GUARD_PRIVATE' hostkeeper.sh && ok 'custom-list download-time private guard present' || bad 'custom-list download-time private guard is missing'
+grep -qF 'redirect_guard' hostkeeper.sh && ok 'custom-list non-curl downgrade is rejected' || bad 'custom-list non-curl downgrade is allowed'
+grep -qF 'private_host' hostkeeper.sh && ok 'private-host download error text present' || bad 'private-host download error text is missing'
+grep -qF "c.source.textContent = l.hasAlt ? '🔗 备源' : '🔗 单源'" webroot/app.js && ok 'list source label is compact' || bad 'list source label is too wide'
+grep -qF "localhost | *.localhost | *.local | *.internal" hostkeeper.sh && ok 'custom list local suffix guard present' || bad 'custom list local suffix guard is missing'
+grep -qF -- '--max-redirs "${DL_MAX_REDIR:-5}"' hostkeeper.sh && ok 'download redirect count is bounded' || bad 'download redirect count is unbounded'
+grep -qF 'setup-guide' webroot/index.html && ok 'first-install setup guide markup present' || bad 'first-install setup guide is missing'
+grep -qF 'setup-download' webroot/index.html && ok 'setup guide download action present' || bad 'setup guide download action is missing'
+grep -qF '向导不会自动重启' webroot/app.js && ok 'setup guide never auto-reboots' || bad 'setup guide auto-reboot copy is missing'
+grep -qF 'function downloadText' webroot/app.js && ok 'text export helper present' || bad 'text export helper is missing'
+grep -qF "label: '⬇️ 导出'" webroot/app.js && ok 'diagnostic/log export action present' || bad 'diagnostic/log export action is missing'
+grep -qF "file: 'HostKeeper-' + (r.data.version || VERSION) + '-report-'" webroot/app.js && ok 'report export filename is versioned' || bad 'report export filename is missing'
+
 printf '\nmodule.prop\n'
 if [ ! -f module.prop ]; then
   bad 'module.prop is missing'

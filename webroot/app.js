@@ -2,8 +2,8 @@
   'use strict';
 
   const MOD = '/data/adb/modules/hostkeeper';
-  const VERSION = 'v1.0.9';
-  const VERSION_CODE = 10;
+  const VERSION = 'v1.1.0';
+  const VERSION_CODE = 11;
   const RULE_MAX = 1000;
   const LEVEL = { green: '🟢', blue: '🔵', yellow: '🟡', orange: '🟠', red: '🔴' };
   const STEPS = [
@@ -96,6 +96,7 @@
     speed: { t: 0, b: 0, v: 0 },
     ready: false,
     gate: '',
+    setupHidden: false,
     addonSel: null,
     lookup: null
   };
@@ -120,6 +121,12 @@
 
   function nowSec() {
     return Date.now() / 1000;
+  }
+
+  function fileStamp() {
+    const d = new Date();
+    const p = (n) => String(n).padStart(2, '0');
+    return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
   }
 
   function ago(sec) {
@@ -583,34 +590,69 @@
     return ok;
   }
 
+  function downloadText(name, text) {
+    try {
+      if (!window.Blob || !window.URL || !URL.createObjectURL) return false;
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = h('a', { href: url, download: name, style: 'display:none' });
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => {
+        try { URL.revokeObjectURL(url); } catch (e) {}
+      }, 1000);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   function textSheet(o) {
     const ta = h('textarea', { class: 'area', readonly: true, spellcheck: 'false', 'aria-label': o.title });
     ta.value = o.text;
     const hint = h('p', { class: 'fine', text: o.hint || '' });
+    const actions = [];
+    if (o.file) {
+      actions.push({
+        label: '⬇️ 导出',
+        class: 'btn-ghost',
+        onClick: () => {
+          if (downloadText(o.file, o.text)) {
+            hint.textContent = '✅ 已请求浏览器保存 ' + o.file + '。';
+            hint.className = 'fine is-ok';
+          } else {
+            ta.focus();
+            ta.select();
+            hint.textContent = '✏️ 当前 WebView 不支持直接保存，请使用“复制”。';
+            hint.className = 'fine';
+          }
+        }
+      });
+    }
+    actions.push({
+      label: '📋 复制',
+      class: 'btn-primary',
+      onClick: async () => {
+        const ok = await copyText(o.text);
+        if (ok) {
+          hint.textContent = '✅ 已复制到剪贴板。';
+          hint.className = 'fine is-ok';
+        } else {
+          ta.focus();
+          ta.select();
+          hint.textContent = '✏️ 此处无法直接复制，文本已选中，请手动复制。';
+          hint.className = 'fine';
+        }
+      }
+    });
+    actions.push({ label: '👌 完成', class: 'btn-ghost', onClick: () => Modal.close() });
     Modal.show({
       icon: o.icon,
       title: o.title,
       body: [ta, hint],
       view: 'text',
-      actions: [
-        { label: '👌 完成', class: 'btn-ghost', onClick: () => Modal.close() },
-        {
-          label: '📋 复制',
-          class: 'btn-primary',
-          onClick: async () => {
-            const ok = await copyText(o.text);
-            if (ok) {
-              hint.textContent = '✅ 已复制到剪贴板。';
-              hint.className = 'fine is-ok';
-            } else {
-              ta.focus();
-              ta.select();
-              hint.textContent = '✏️ 此处无法直接复制，文本已选中，请手动复制。';
-              hint.className = 'fine';
-            }
-          }
-        }
-      ]
+      actions: actions
     });
   }
 
@@ -756,6 +798,55 @@
       ? '选择一份拦截列表。越严格的列表拦截越多，也越可能影响正常使用。'
       : '🔴 拦截已关闭。请先在 🛡️ 防护 中打开开关，再切换或更新列表。';
     applyBusy();
+    renderSetup(st);
+  }
+
+  function renderSetup(st) {
+    const box = $('setup-guide');
+    if (!box) return;
+    const needed = !!st && (st.setup !== 'ready' || st.reboot || st.applied === 'inactive' || st.applied === 'overridden');
+    if (!needed || S.setupHidden) {
+      box.hidden = true;
+      return;
+    }
+    box.hidden = false;
+    const s1 = st.setup === 'ready' ? 'is-done' : st.setup === 'failed' ? 'is-error' : 'is-active';
+    $('setup-step-1').className = 'setup-step ' + s1;
+    const b1 = $('setup-download');
+    b1.hidden = st.setup === 'ready';
+    b1.textContent = st.setup === 'failed' ? '↻ 重试下载' : '⬇️ 下载';
+    b1.disabled = S.busy || st.setup === 'ready';
+    $('setup-desc-1').textContent = st.setup === 'failed'
+      ? '上次下载失败。可查看日志中的网络原因，或换一份列表重试。'
+      : st.setup === 'ready' ? '主列表已下载并校验。' : '选择一份列表，下载并校验域名缓存。';
+
+    const s2 = st.setup !== 'ready' ? '' : st.applied === 'applied' ? 'is-done' : st.applied === 'overridden' ? 'is-error' : 'is-active';
+    $('setup-step-2').className = 'setup-step ' + s2;
+    const b2 = $('setup-check');
+    b2.hidden = st.setup !== 'ready' || st.applied === 'applied';
+    b2.disabled = S.busy || st.setup !== 'ready';
+    b2.textContent = st.applied === 'overridden' ? '🩺 复检' : '🩺 检查';
+    $('setup-desc-2').textContent = st.setup !== 'ready'
+      ? '下载完成后，检查 hosts 文件、挂载状态和冲突模块。'
+      : st.applied === 'overridden'
+        ? 'hosts 文件被其他模块覆盖，请先停用冲突模块。'
+        : st.applied === 'applied' ? '挂载状态正常。' : '检查 hosts 文件、挂载状态和冲突模块。';
+
+    const needReboot = !!st.reboot || st.applied === 'inactive';
+    const s3 = needReboot ? 'is-active' : st.setup === 'ready' && st.applied === 'applied' ? 'is-done' : '';
+    $('setup-step-3').className = 'setup-step ' + s3;
+    const b3 = $('setup-reboot');
+    b3.hidden = !needReboot;
+    b3.disabled = S.busy;
+    $('setup-desc-3').textContent = needReboot
+      ? '重启一次完成挂载，回来后确认状态为“已生效”。'
+      : st.setup !== 'ready' ? '下载并检查挂载后，再判断是否需要重启。' : '无需重启，当前挂载状态正常。';
+
+    const foot = $('setup-foot');
+    if (st.setup === 'failed') foot.textContent = '❌ 下载失败不会自动重启设备；修复网络后点“重试下载”。';
+    else if (st.applied === 'overridden') foot.textContent = '⚠️ 请先停用其他 hosts 模块，再回来检查或重启。';
+    else if (needReboot) foot.textContent = '🔁 向导不会自动重启；确认其他应用已保存后，再点“重启”。';
+    else foot.textContent = '🔒 向导只读取本机状态；下载走 HTTPS，列表有体积上限。';
   }
 
   const cards = {};
@@ -768,6 +859,7 @@
     c.desc = h('p', { class: 'lc-desc' });
     c.count = h('span');
     c.date = h('span');
+    c.source = h('span', { class: 'lc-source' });
     c.retry = h('button', { class: 'btn btn-ghost btn-xs invisible', type: 'button', text: '🔁 重试' });
     c.use = h('button', { class: 'btn btn-primary btn-xs', type: 'button', text: '⬇️ 使用此列表' });
     c.active = h('span', { class: 'lc-active', text: '✅ 当前使用' });
@@ -776,7 +868,7 @@
     c.card = h('article', { class: 'lcard' },
       h('div', { class: 'lc-top' }, c.name, c.lvl),
       c.desc,
-      h('div', { class: 'lc-meta' }, c.count, c.date),
+      h('div', { class: 'lc-meta' }, c.count, c.date, c.source),
       h('div', { class: 'lc-foot' }, c.retry, h('span', null, c.use, c.active))
     );
     return c;
@@ -815,6 +907,10 @@
     clear(c.count);
     clear(c.date);
     c.count.className = '';
+    c.source.textContent = l.hasAlt ? '🔗 备源' : '🔗 单源';
+    c.source.title = l.hasAlt
+      ? '主源：' + (l.host || '未知') + '；备用源：' + (l.altHost || '未知')
+      : '仅主源：' + (l.host || '未知') + '（该列表没有备用源）';
     const hasCount = l.count !== null && l.count !== undefined;
     if (hasCount) {
       c.count.textContent = '🔢 ' + fmtNum(l.count) + ' 条';
@@ -823,7 +919,7 @@
       c.count.appendChild(sk('sk-line'));
       c.date.appendChild(sk('sk-line'));
     } else {
-      c.count.textContent = '❌ 无法获取条目数量';
+      c.count.textContent = '❌ ' + (l.errorText || '无法获取条目数量');
       c.count.className = 'is-err';
       c.date.textContent = '📅 ' + (l.date ? fmtDate(l.date) : '未知');
     }
@@ -895,16 +991,19 @@
     r.desc.title = a.desc;
     clear(r.meta);
     r.meta.className = 'arow-meta';
+    r.meta.title = a.hasAlt
+      ? '主源：' + (a.host || '未知') + '；备用源：' + (a.altHost || '未知')
+      : '仅主源：' + (a.host || '未知');
     const known = a.count !== null && a.count !== undefined ? a.count : a.installed;
     if (known !== null && known !== undefined) {
       let m = '🔢 ' + fmtNum(known) + ' ' + plural(known, '条', '条');
       if (a.enabled && a.added !== null && a.added !== undefined) m += '  ·  ➕ 新增 ' + fmtNum(a.added);
-      r.meta.textContent = m;
+      r.meta.textContent = m + (a.hasAlt ? '  ·  备源' : '  ·  单源');
     } else if (a.error && !a.busy) {
-      r.meta.textContent = '❌ 无法获取详情';
+      r.meta.textContent = '❌ ' + (a.errorText || '无法获取详情') + (a.hasAlt ? ' · 备源' : ' · 单源');
       r.meta.className = 'arow-meta is-err';
     } else if (a.custom && !a.busy) {
-      r.meta.textContent = a.enabled ? '🔢 已安装' : '🔢 首次下载后显示大小';
+      r.meta.textContent = a.enabled ? '🔢 已安装 · 单源' : '🔢 首次下载后显示大小 · 单源';
     } else {
       r.meta.appendChild(sk('sk-line w-40'));
     }
@@ -1498,7 +1597,7 @@
     if (S.busy || S.syncBusy) return;
     const url = h('input', { type: 'text', inputmode: 'url', autocomplete: 'off', autocapitalize: 'off', autocorrect: 'off', spellcheck: 'false', maxlength: '300', placeholder: 'https://example.com/hosts.txt', 'aria-label': '列表地址' });
     const name = h('input', { type: 'text', autocomplete: 'off', maxlength: '40', placeholder: '名称（可选）', 'aria-label': '列表名称' });
-    const msg = h('p', { class: 'fine', text: '支持 hosts 文件、纯域名列表和简单的 ||domain^ 列表。' });
+    const msg = h('p', { class: 'fine', text: '支持 hosts 文件、纯域名列表和简单的 ||domain^ 列表。仅接受 HTTPS 公网地址。' });
     const submit = async () => {
       const c = checkUrl(url.value);
       if (c.err) {
@@ -1517,7 +1616,7 @@
         h('label', { class: 'field' }, url),
         h('label', { class: 'field' }, name),
         msg,
-        note('🛡️ 无论列表内容是什么，HostKeeper 只会把条目转换为拦截规则，无法把域名重定向到其他地址。')
+        note('🛡️ 仅接受 HTTPS 公网地址；域名解析到本地或私有网络时会被拒绝。列表内容只会转换为拦截规则，无法把域名重定向到其他地址。')
       ],
       view: 'custom',
       actions: [
@@ -1646,6 +1745,7 @@
     return [
       ['🛡️ 拦截状态', st.enabled ? '🟢 开启' : '🔴 关闭'],
       ['📋 当前列表', st.listName || '—'],
+      ['🔗 列表源', (st.listHost || '—') + (st.listHasAlt ? ' · 备用 ' + (st.listAltHost || '—') : ' · 仅主源')],
       ['🎚️ 强度', (LEVEL[st.level] || '') + ' ' + (st.levelText || '')],
       ['➕ 附加列表', addons.length ? addons.map((a) => a.name).join('、') : '无'],
       ['🔢 已拦截域名', st.setup === 'ready' ? (st.enabled ? fmtNum(st.domains) : '0（已暂停）') : '—'],
@@ -1809,6 +1909,8 @@
         { label: '👌 知道了', class: 'btn-primary', onClick: () => Modal.close() }
       ]
     });
+    // 检查结果可能改变 applied/setup，主动刷新一次，避免向导最多等 60 秒。
+    loadStatus();
   }
 
   function reportText(st, diag) {
@@ -1834,7 +1936,13 @@
       return;
     }
     await loadLogs();
-    textSheet({ icon: '📋', title: '报告', text: reportText(r.data, diag), hint: '可粘贴到问题反馈中。它不包含个人数据，只有 HostKeeper 自身状态。' });
+    textSheet({
+      icon: '📋',
+      title: '报告',
+      text: reportText(r.data, diag),
+      file: 'HostKeeper-' + (r.data.version || VERSION) + '-report-' + fileStamp() + '.txt',
+      hint: '可复制或导出到问题反馈中。它不包含个人数据，只有 HostKeeper 自身状态。'
+    });
   }
 
   async function repairFlow() {
@@ -2311,7 +2419,13 @@
       return;
     }
     const text = logs.map((l) => new Date(l.t * 1000).toISOString().replace('T', ' ').slice(0, 19) + ' ' + l.l + ' ' + l.m).join('\n');
-    textSheet({ icon: '📜', title: '复制日志', text: text, hint: '共 ' + logs.length + ' 条日志。' });
+    textSheet({
+      icon: '📜',
+      title: '日志',
+      text: text,
+      file: 'HostKeeper-' + VERSION + '-logs-' + fileStamp() + '.txt',
+      hint: '共 ' + logs.length + ' 条日志。可复制或导出 .txt。'
+    });
   }
 
   async function openLink(id) {
@@ -2452,6 +2566,17 @@
     $('tab-allow').addEventListener('click', () => { S.tab = 'allow'; renderRules(); });
     $('tab-block').addEventListener('click', () => { S.tab = 'block'; renderRules(); });
     $('act-update').addEventListener('click', runUpdate);
+    $('setup-download').addEventListener('click', () => {
+      S.setupHidden = false;
+      runUpdate();
+    });
+    $('setup-check').addEventListener('click', showDiag);
+    $('setup-reboot').addEventListener('click', rebootFlow);
+    $('setup-skip').addEventListener('click', () => {
+      S.setupHidden = true;
+      renderSetup(S.status);
+      toast('可从“状态”或顶部提示继续完成首次安装。', 'info');
+    });
     $('act-status').addEventListener('click', showStatusDialog);
     $('act-toggle').addEventListener('click', toggleBlocker);
     // 健康检查用文档级委托：即使某个 WebView 没有绑定到按钮本身，点击仍能被捕获。

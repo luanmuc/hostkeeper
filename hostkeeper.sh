@@ -19,8 +19,8 @@ umask 022
 PATH=/system/bin:/system/xbin:/vendor/bin:${PATH:-/bin}
 export PATH
 
-HK_VER=v1.0.9
-HK_VCODE=10
+HK_VER=v1.1.0
+HK_VCODE=11
 SELF=$0
 case $SELF in /*) ;; *) SELF=$(pwd)/$SELF ;; esac
 MODDIR=${HK_MODDIR:-${SELF%/*}}
@@ -85,6 +85,8 @@ LOCAL6_LINE='::1 localhost ip6-localhost'
 MODE=cli
 DL_TOOL=
 DL_GZ=0
+DL_MAX_REDIR=5
+DL_GUARD_PRIVATE=0
 DL_PIDF=
 NL='
 '
@@ -1030,9 +1032,24 @@ dl_get() {
   rm -f "$_dg_o" "$_dg_h.err"
   : > "$_dg_h"
   DL_FAIL=; DL_ERR=; DL_CODE=; DL_CL=; DL_TOTAL=; DL_ETAG=; DL_LASTMOD=; DL_ENC=
+  if [ "$DL_GUARD_PRIVATE" = 1 ]; then
+    _dg_gh=${_dg_u#*://}
+    _dg_gh=${_dg_gh%%/*}
+    _dg_gh=${_dg_gh%%:*}
+    if host_resolves_private "$_dg_gh"; then
+      DL_FAIL=private_host
+      DL_ERR="resolved to private address"
+      return 1
+    fi
+    if [ "$DL_TOOL" != curl ]; then
+      DL_FAIL=redirect_guard
+      DL_ERR="wget cannot enforce custom-list redirect policy"
+      return 1
+    fi
+  fi
   case $DL_TOOL in
     curl)
-      set -- -sS -L -g --proto '=https' --proto-redir '=https' --connect-timeout 15 --speed-limit 1024 --speed-time 30 --max-filesize "$MAX_BYTES" -A "$UA" -D "$_dg_h" -o "$_dg_o"
+      set -- -sS -L -g --proto '=https' --proto-redir '=https' --max-redirs "${DL_MAX_REDIR:-5}" --connect-timeout 15 --speed-limit 1024 --speed-time 30 --max-filesize "$MAX_BYTES" -A "$UA" -D "$_dg_h" -o "$_dg_o"
       if [ "$_dg_m" = peek ]; then
         set -- "$@" -r 0-8191
         [ -n "${DL_MAX_TIME:-}" ] && set -- "$@" --max-time "$DL_MAX_TIME"
@@ -1095,6 +1112,8 @@ dl_get() {
       DL_FAIL=toolarge
     elif [ -z "$DL_CODE" ]; then
       DL_FAIL=network
+    elif [ "$_dg_rc" -eq 47 ] && [ "$DL_MAX_REDIR" = 0 ]; then
+      DL_FAIL=redirect
     elif [ "$DL_CODE" != 200 ] && [ "$DL_CODE" != 206 ]; then
       DL_FAIL=http
     elif [ "$_dg_rc" -ne 0 ] && [ "$_dg_m" = full ]; then
@@ -1108,9 +1127,28 @@ dl_reason() {
   case $DL_FAIL in
     http) printf 'HTTP %s' "$DL_CODE" ;;
     insecure) printf '拒绝了不安全的跳转' ;;
+    redirect) printf '自定义列表不允许跳转，请填写最终地址' ;;
+    private_host) printf '域名解析到了本地或私有地址' ;;
+    redirect_guard) printf '设备下载工具无法安全校验自定义列表跳转' ;;
     toolarge) printf '文件超过 %s MB' "$((MAX_BYTES / 1048576))" ;;
     incomplete) printf '传输中断%s' "${DL_ERR:+ ($DL_ERR)}" ;;
     *) printf '无法连接%s' "${DL_ERR:+ ($DL_ERR)}" ;;
+  esac
+}
+
+source_error_text() {
+  case $1 in
+    network) printf '网络连接失败' ;;
+    http) printf '源站返回异常状态' ;;
+    insecure) printf '下载跳转到了非 HTTPS 地址' ;;
+    redirect) printf '自定义列表不允许跳转，请填写最终地址' ;;
+    private_host) printf '域名解析到了本地或私有地址' ;;
+    redirect_guard) printf '设备下载工具不支持自定义列表安全校验' ;;
+    toolarge) printf '文件超过体积上限' ;;
+    incomplete) printf '下载传输中断' ;;
+    count_unavailable) printf '已下载，但无法识别条目数量' ;;
+    no_downloader) printf '设备上没有可用的下载工具' ;;
+    *) printf '获取失败' ;;
   esac
 }
 
@@ -1831,6 +1869,8 @@ meta_ids() {
 
 meta_fetch_one() {
   list_info "$1" || return 0
+  DL_GUARD_PRIVATE=0; DL_MAX_REDIR=5
+  if [ "$L_CUSTOM" = 1 ]; then DL_GUARD_PRIVATE=1; DL_MAX_REDIR=0; fi
   _mf_b=$TMPD/meta.$1.body
   _mf_h=$TMPD/meta.$1.hdr
   _mf_urls=$L_URL
@@ -1932,6 +1972,15 @@ list_item_json() {
   meta_load "$1"
   _li_host=${L_URL#*://}
   _li_host=${_li_host%%/*}
+  _li_alt=
+  _li_ha=false
+  if [ -n "$L_URL_ALT" ]; then
+    _li_alt=${L_URL_ALT#*://}
+    _li_alt=${_li_alt%%/*}
+    _li_ha=true
+  fi
+  _li_errtxt=
+  [ -n "$M_ERR" ] && _li_errtxt=$(source_error_text "$M_ERR")
   js "$L_NAME"; _li_1=$JS
   js "$L_LEVELTXT"; _li_2=$JS
   js "$L_DESC"; _li_3=$JS
@@ -1942,7 +1991,9 @@ list_item_json() {
   jnum "$M_EPOCH"; _li_8=$JN
   jnum "$M_SIZE"; _li_9=$JN
   jnum "$M_FETCHED"
-  R_ITEM="{\"id\":\"$1\",\"name\":$_li_1,\"group\":\"$L_GROUP\",\"level\":\"$L_LEVEL\",\"levelText\":$_li_2,\"desc\":$_li_3,\"host\":$_li_4,\"count\":$_li_7,\"date\":$_li_8,\"dateRaw\":$_li_5,\"size\":$_li_9,\"error\":$_li_6,\"fetched\":$JN,\"busy\":$2}"
+  js "$_li_alt"; _li_10=$JS
+  js "$_li_errtxt"; _li_11=$JS
+  R_ITEM="{\"id\":\"$1\",\"name\":$_li_1,\"group\":\"$L_GROUP\",\"level\":\"$L_LEVEL\",\"levelText\":$_li_2,\"desc\":$_li_3,\"host\":$_li_4,\"altHost\":$_li_10,\"hasAlt\":$_li_ha,\"count\":$_li_7,\"date\":$_li_8,\"dateRaw\":$_li_5,\"size\":$_li_9,\"error\":$_li_6,\"errorText\":$_li_11,\"fetched\":$JN,\"busy\":$2}"
 }
 
 addon_item_json() {
@@ -1950,6 +2001,15 @@ addon_item_json() {
   meta_load "$1"
   _ai_host=${L_URL#*://}
   _ai_host=${_ai_host%%/*}
+  _ai_alt=
+  _ai_ha=false
+  if [ -n "$L_URL_ALT" ]; then
+    _ai_alt=${L_URL_ALT#*://}
+    _ai_alt=${_ai_alt%%/*}
+    _ai_ha=true
+  fi
+  _ai_errtxt=
+  [ -n "$M_ERR" ] && _ai_errtxt=$(source_error_text "$M_ERR")
   _ai_on=false
   _ai_inst=null
   _ai_add=null
@@ -1974,7 +2034,9 @@ addon_item_json() {
   jnum "$M_COUNT"; _ai_7=$JN
   jnum "$M_EPOCH"; _ai_8=$JN
   jnum "$M_SIZE"; _ai_9=$JN
-  R_ITEM="{\"id\":\"$1\",\"name\":$_ai_1,\"icon\":\"$L_ICON\",\"group\":\"$L_GROUP\",\"desc\":$_ai_3,\"host\":$_ai_4,\"count\":$_ai_7,\"date\":$_ai_8,\"size\":$_ai_9,\"error\":$_ai_6,\"busy\":$2,\"enabled\":$_ai_on,\"installed\":$_ai_inst,\"added\":$_ai_add,\"warn\":\"$L_WARN\",\"suggested\":$_ai_sug,\"custom\":$_ai_cus,\"url\":$_ai_url}"
+  js "$_ai_alt"; _ai_10=$JS
+  js "$_ai_errtxt"; _ai_11=$JS
+  R_ITEM="{\"id\":\"$1\",\"name\":$_ai_1,\"icon\":\"$L_ICON\",\"group\":\"$L_GROUP\",\"desc\":$_ai_3,\"host\":$_ai_4,\"altHost\":$_ai_10,\"hasAlt\":$_ai_ha,\"count\":$_ai_7,\"date\":$_ai_8,\"size\":$_ai_9,\"error\":$_ai_6,\"errorText\":$_ai_11,\"busy\":$2,\"enabled\":$_ai_on,\"installed\":$_ai_inst,\"added\":$_ai_add,\"warn\":\"$L_WARN\",\"suggested\":$_ai_sug,\"custom\":$_ai_cus,\"url\":$_ai_url}"
 }
 
 pl_set() { PL_CODE=$1; PL_MSG=$2; }
@@ -2003,6 +2065,8 @@ pl_cleanup() {
 
 fetch_source() {
   list_info "$1" || return 1
+  DL_GUARD_PRIVATE=0; DL_MAX_REDIR=5
+  if [ "$L_CUSTOM" = 1 ]; then DL_GUARD_PRIVATE=1; DL_MAX_REDIR=0; fi
   _fs_id=$1
   FS_NAME=$L_NAME
   _fs_url=$L_URL
@@ -2556,6 +2620,15 @@ cmd_status() {
   _st_ad="[${_st_ad%,}]"
   S_SRCDATE=
   src_load "$C_LIST"
+  _st_host=${L_URL#*://}
+  _st_host=${_st_host%%/*}
+  _st_alt=
+  _st_ha=false
+  if [ -n "$L_URL_ALT" ]; then
+    _st_alt=${L_URL_ALT#*://}
+    _st_alt=${_st_alt%%/*}
+    _st_ha=true
+  fi
   js "$_st_name"; _st_1=$JS
   js "$_st_ltxt"; _st_2=$JS
   js "$MGR_NAME"; _st_3=$JS
@@ -2568,9 +2641,11 @@ cmd_status() {
   js "$R_MOUNT"; _st_mt=$JS
   js "$C_SETUP"; _st_su=$JS
   js "$C_GUARD"; _st_gd=$JS
+  js "$_st_host"; _st_lhost=$JS
+  js "$_st_alt"; _st_lalt=$JS
   _st_hs=0
   [ -f "$HOSTS" ] && _st_hs=$(fsize "$HOSTS")
-  reply true status '' "{\"version\":$_st_v,\"versionCode\":$HK_VCODE,\"manager\":$_st_3,\"managerVersion\":$_st_4,\"enabled\":$_st_en,\"list\":$_st_lid,\"listName\":$_st_1,\"level\":$_st_lvl,\"levelText\":$_st_2,\"domains\":$C_DOMAINS,\"listCount\":$C_COUNT,\"allow\":$_st_al,\"block\":$_st_bl,\"updated\":$C_UPDATED,\"checked\":$C_CHECKED,\"sourceDate\":$_st_5,\"reboot\":$_st_rb,\"applied\":$_st_ap,\"mount\":$_st_mt,\"setup\":$_st_su,\"conflicts\":$_st_cfj,\"adaway\":$_st_aa,\"httpd\":$_st_hd,\"addons\":$_st_ad,\"live\":$_st_lv,\"autoupdate\":$C_AUTO,\"sched\":$_st_sc,\"guard\":$_st_gd,\"hostsSize\":$_st_hs,\"staleDays\":$STALE_DAYS,\"now\":$(now),\"stats\":{\"base\":${ST_BASE:-0},\"allowed\":${ST_ALLOWED:-0},\"blocked\":${ST_BLOCKED:-0},\"guarded\":${ST_GUARDED:-0}},\"op\":$R_OP}"
+  reply true status '' "{\"version\":$_st_v,\"versionCode\":$HK_VCODE,\"manager\":$_st_3,\"managerVersion\":$_st_4,\"enabled\":$_st_en,\"list\":$_st_lid,\"listName\":$_st_1,\"level\":$_st_lvl,\"levelText\":$_st_2,\"domains\":$C_DOMAINS,\"listCount\":$C_COUNT,\"allow\":$_st_al,\"block\":$_st_bl,\"updated\":$C_UPDATED,\"checked\":$C_CHECKED,\"sourceDate\":$_st_5,\"reboot\":$_st_rb,\"applied\":$_st_ap,\"mount\":$_st_mt,\"setup\":$_st_su,\"conflicts\":$_st_cfj,\"adaway\":$_st_aa,\"httpd\":$_st_hd,\"addons\":$_st_ad,\"live\":$_st_lv,\"autoupdate\":$C_AUTO,\"sched\":$_st_sc,\"guard\":$_st_gd,\"hostsSize\":$_st_hs,\"listHost\":$_st_lhost,\"listAltHost\":$_st_lalt,\"listHasAlt\":$_st_ha,\"staleDays\":$STALE_DAYS,\"now\":$(now),\"stats\":{\"base\":${ST_BASE:-0},\"allowed\":${ST_ALLOWED:-0},\"blocked\":${ST_BLOCKED:-0},\"guarded\":${ST_GUARDED:-0}},\"op\":$R_OP}"
 }
 
 cmd_progress() { op_json; reply true progress '' "$R_OP"; }
@@ -2754,6 +2829,51 @@ custom_id_for() {
   return 1
 }
 
+is_private_ip() {
+  case $1 in
+    10.* | 127.* | 0.* | 192.168.* | 169.254.* | 198.18.* | 198.19.* | \
+    192.0.0.* | 192.0.2.* | 198.51.100.* | 203.0.113.* | 22[4-9].* | 2[3-5][0-9].*)
+      return 0 ;;
+    172.*)
+      _ip_o=${1#172.}
+      _ip_o=${_ip_o%%.*}
+      is_num "$_ip_o" && [ "$_ip_o" -ge 16 ] && [ "$_ip_o" -le 31 ] && return 0 ;;
+    100.*)
+      _ip_o=${1#100.}
+      _ip_o=${_ip_o%%.*}
+      is_num "$_ip_o" && [ "$_ip_o" -ge 64 ] && [ "$_ip_o" -le 127 ] && return 0 ;;
+    ::1 | :: | fe* | fc* | fd* | ff*)
+      return 0 ;;
+    ::ffff:*)
+      is_private_ip "${1#::ffff:}" && return 0 ;;
+  esac
+  return 1
+}
+
+host_resolves_private() {
+  has nslookup || return 1
+  _hp_out=$(timeout 5 nslookup "$1" 2>/dev/null)
+  _hp_ips=$(printf '%s\n' "$_hp_out" | awk '
+    function emit(start, i, v) {
+      for (i = start; i <= NF; i++) {
+        v = $i
+        gsub(/,/, "", v)
+        if (v ~ /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/ || v ~ /^[0-9a-fA-F]{0,4}(:[0-9a-fA-F]{0,4})+$/ || v ~ /^[0-9a-fA-F:]+:[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/) print v
+      }
+    }
+    BEGIN { seen = 0; addr = 0 }
+    tolower($1) == "name:" { seen = 1; addr = 0; next }
+    seen && tolower($1) ~ /^address(es)?:/ { addr = 1; emit(2); next }
+    seen && tolower($1) == "address" { addr = 1; emit(3); next }
+    addr && $0 ~ /^[ \t]/ { emit(1); next }
+    addr { addr = 0 }
+  ')
+  for _hp_ip in $_hp_ips; do
+    is_private_ip "$_hp_ip" && return 0
+  done
+  return 1
+}
+
 cmd_source_add() {
   _sa_u=$1
   _sa_raw=${2:-}
@@ -2773,6 +2893,16 @@ cmd_source_add() {
   _sa_h=$(printf '%s' "$_sa_h" | tr '[:upper:]' '[:lower:]')
   if [ -z "$_sa_h" ] || ! printf '%s\n' "$_sa_h" | awk "$AWK_VALID"; then
     reply false source_invalid '🚫 地址必须使用真实域名，不允许 IP 地址和本地 hosts。'
+    return 0
+  fi
+  case $_sa_h in
+    localhost | *.localhost | *.local | *.internal | *.home | *.lan)
+      reply false source_invalid '🚫 不允许使用本地域名，请填写公网 HTTPS 地址。'
+      return 0 ;;
+  esac
+  if host_resolves_private "$_sa_h"; then
+    log WARN "拒绝自定义列表：域名解析到本地或私有地址（$_sa_h）"
+    reply false source_invalid '🚫 该域名解析到了本地或私有网络地址，出于安全考虑不能添加。'
     return 0
   fi
   for _sa_i in $BASE_IDS $ADDON_IDS; do
@@ -3351,8 +3481,15 @@ cmd_diag() {
   log INFO "健康检查开始（WebUI 请求，HostKeeper $HK_VER）"
   DG=; DG_OK=0; DG_WARN=0; DG_ERR=0
   cfg_load
+  DL_GUARD_PRIVATE=0; DL_MAX_REDIR=5
+  if [ "$L_CUSTOM" = 1 ]; then DL_GUARD_PRIVATE=1; DL_MAX_REDIR=0; fi
   _dg_name=$L_NAME
   _dg_url=$L_URL
+  _dg_alt=$L_URL_ALT
+  _dg_host=${_dg_url#*://}
+  _dg_host=${_dg_host%%/*}
+  _dg_althost=
+  [ -n "$_dg_alt" ] && { _dg_althost=${_dg_alt#*://}; _dg_althost=${_dg_althost%%/*}; }
   detect_manager
   applied_state
   conflicts_scan
@@ -3458,10 +3595,18 @@ cmd_diag() {
     fi
     DL_MAX_TIME=20
     if dl_get "$_dg_url" "$TMPD/diag.body" "$TMPD/diag.hdr" peek; then
-      diag_add ok network '🌐 列表服务器' "可访问（HTTP $DL_CODE）。"
+      if [ -n "$_dg_althost" ]; then
+        diag_add ok network '🌐 列表服务器' "可访问（HTTP $DL_CODE）。主源 $_dg_host · 备用源 $_dg_althost。"
+      else
+        diag_add ok network '🌐 列表服务器' "可访问（HTTP $DL_CODE）。主源 $_dg_host · 该列表未配置备用源。"
+      fi
     else
       _dg_net_why=$(dl_reason)
-      diag_add warn network '🌐 列表服务器' "无法连接 $_dg_name 的服务器：$_dg_net_why。"
+      if [ -n "$_dg_althost" ]; then
+        diag_add warn network '🌐 列表服务器' "主源 $_dg_host 无法连接：$_dg_net_why。更新时会尝试备用源 $_dg_althost。"
+      else
+        diag_add warn network '🌐 列表服务器' "无法连接 $_dg_name 的服务器：$_dg_net_why。该列表没有备用源，请切换列表或稍后重试。"
+      fi
       log WARN "健康检查网络探测失败：$_dg_name：$_dg_net_why"
     fi
     DL_MAX_TIME=
@@ -3469,6 +3614,16 @@ cmd_diag() {
   else
     diag_add err downloader '⬇️ 下载工具' 'curl 和 BusyBox wget 都不可用，无法下载列表。'
     log ERROR "健康检查失败：curl 和 BusyBox wget 都不可用"
+  fi
+
+  if meta_load "$C_LIST"; then
+    if [ -n "$M_ERR" ]; then
+      diag_add warn source '🗂️ 下载源' "上次获取 $L_NAME 详情失败：$(source_error_text "$M_ERR")。"
+    elif [ -n "$_dg_althost" ]; then
+      diag_add ok source '🗂️ 下载源' "主源 $_dg_host，备用源 $_dg_althost。"
+    else
+      diag_add ok source '🗂️ 下载源' "主源 $_dg_host；该列表没有备用源。"
+    fi
   fi
 
   if [ "$HK_BB" = none ]; then

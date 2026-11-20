@@ -11,8 +11,8 @@
 <title>HostKeeper</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preload" href="fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="style.css?v=1.0.9">
-<script src="theme.js?v=1.0.9"></script>
+<link rel="stylesheet" href="style.css?v=1.1.0">
+<script src="theme.js?v=1.1.0"></script>
 </head>
 <body>
 <div class="bg" aria-hidden="true"></div>
@@ -22,7 +22,7 @@
     <div class="brand">
       <div class="logo" aria-hidden="true">🛡️</div>
       <div class="brand-text">
-        <div class="brand-name">HostKeeper <span class="ver" id="ver">v1.0.9</span></div>
+        <div class="brand-name">HostKeeper <span class="ver" id="ver">v1.1.0</span></div>
         <div class="badge is-wait" id="badge"><span class="badge-emoji" id="badge-emoji">⏳</span><span id="badge-text">加载中…</span></div>
       </div>
     </div>
@@ -69,6 +69,41 @@
     </div>
     <div class="hero-applied" id="hero-applied"><span class="sk sk-line w-50"></span></div>
     <div class="hero-tags" id="hero-tags"></div>
+  </section>
+
+  <section class="panel glass setup-guide" id="setup-guide" aria-labelledby="setup-title" hidden>
+    <div class="panel-head">
+      <h2 id="setup-title">🚀 首次安装</h2>
+      <button class="btn btn-ghost btn-xs" id="setup-skip" type="button">稍后再说</button>
+    </div>
+    <p class="panel-note" id="setup-note">按顺序完成下面三步，HostKeeper 才会开始拦截。不会自动重启设备。</p>
+    <div class="setup-steps">
+      <div class="setup-step" id="setup-step-1">
+        <span class="setup-no">1</span>
+        <div class="setup-body">
+          <div class="setup-name">下载主列表</div>
+          <div class="setup-desc" id="setup-desc-1">选择一份列表，下载并校验域名缓存。</div>
+        </div>
+        <button class="btn btn-primary btn-xs setup-btn" id="setup-download" type="button">⬇️ 下载</button>
+      </div>
+      <div class="setup-step" id="setup-step-2">
+        <span class="setup-no">2</span>
+        <div class="setup-body">
+          <div class="setup-name">检查挂载</div>
+          <div class="setup-desc" id="setup-desc-2">检查 hosts 文件、挂载状态和冲突模块。</div>
+        </div>
+        <button class="btn btn-ghost btn-xs setup-btn" id="setup-check" type="button">🩺 检查</button>
+      </div>
+      <div class="setup-step" id="setup-step-3">
+        <span class="setup-no">3</span>
+        <div class="setup-body">
+          <div class="setup-name">重启确认</div>
+          <div class="setup-desc" id="setup-desc-3">重启一次完成挂载，回来后确认状态为“已生效”。</div>
+        </div>
+        <button class="btn btn-warn btn-xs setup-btn" id="setup-reboot" type="button">🔁 重启</button>
+      </div>
+    </div>
+    <p class="setup-foot" id="setup-foot">🔒 向导只读取本机状态；下载走 HTTPS，列表有体积上限。</p>
   </section>
 
   <section class="panel glass" id="lists" aria-labelledby="lists-title">
@@ -175,7 +210,7 @@
       <button class="btn btn-ghost" type="button" data-link="hagezi">📋 HaGeZi</button>
       <button class="btn btn-ghost" type="button" data-link="inter">🔤 Inter</button>
     </div>
-    <p class="credits-ver" id="credits-ver">HostKeeper v1.0.9 • 🔒 仅本地运行 • 无遥测 • Inter (SIL OFL 1.1)</p>
+    <p class="credits-ver" id="credits-ver">HostKeeper v1.1.0 • 🔒 仅本地运行 • 无遥测 • Inter (SIL OFL 1.1)</p>
   </footer>
 </main>
 
@@ -206,6 +241,6 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
-<script src="app.js?v=1.0.9"></script>
+<script src="app.js?v=1.1.0"></script>
 </body>
 </html>
