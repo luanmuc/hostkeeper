@@ -51,18 +51,20 @@
 - **维护约定**：`lx-music-mobile` 聚合音源仓库（`backend-api`）新增或更换源时，必须同步补这里——API 域名与播放 CDN 域名都要加，否则会被列表误杀。
 - **审计要求**：改动本文件必须在 `STRESS-TEST-PLAN.md` 补对应用例，并验证「用户自定义规则不被覆盖」这条不变量。
 
-### 2.2 内置拦截清单 `block-default.list`
+### 2.2 内置拦截清单 `block-default.list` + `block-default-adn.list`
 
-随包文件，与 `module.prop` 同级；`hostkeeper.sh` 里对应 `BLOCKD=$MODDIR/block-default.list`。
+随包文件，与 `module.prop` 同级；`hostkeeper.sh` 里对应 `BLOCKD=$MODDIR/block-default.list` 与 `BLOCKD2=$MODDIR/block-default-adn.list`。
 
-- **用途**：把已知的顺丰同城骑士开屏广告聚合入口与腾讯 GDT 漏项预置为精确拦截域，避免只收窄 `*.qq.com` 后仍被 ToBid / 美数 / GDT 其它域名放行。
+- **用途**：`block-default.list` 是 v1.1.3 基础集（ToBid/美数聚合入口 + 腾讯 GDT 漏项，16 条）；`block-default-adn.list` 是 v1.1.4 ADN 补充集（Pangle/Gromore、Sigmob、AdScope、Octopus、泛为，16 条）。两集合计 32 条精确域名，覆盖顺丰同城骑士开屏广告已知的下一层请求链路。
 - **合并入口**：`ensure_dirs()` 末尾在 `allow_seed()` 之后调用 `block_seed()`。
-  - `block.list` 为空 → 写入全部 16 条精确域名规则（过滤注释/空行/通配）。
+  - `block_seed()` 调两次 `block_seed_one()`：基础集用 `$BLOCKF.seed-v1`，ADN 集用 `$BLOCKF.seed-v2`。
+  - `block.list` 为空 → 两段各写入 16 条，共 32 条（过滤注释/空行/通配）。
   - 已有内容 → 逐行 `grep -qxF --` 检查，只追加缺失条目；**用户自定义规则永不覆盖、不重排**。
-  - 首次合并成功写一次性 marker `$BLOCKF.seed-v1`；之后用户手动删除某条内置规则，不会被再次补回。要重新补齐，删除 marker 后重跑 `block_seed()`。
+  - v1.1.3 → v1.1.4 升级时 `seed-v1` 已存在，基础集跳过；`seed-v2` 不存在，只补 16 条 ADN。旧 marker 不会阻止新版规则写入。
+  - 任一段合并成功后写对应 marker；之后用户手动删除该段内置规则，不会被再次补回。要重新补齐，删除对应 marker 后重跑 `block_seed()`。
 - **格式**：只支持精确域名，一行一条；`*.` 通配会被 `block_seed()` 跳过（`block.list` 本身只做精确匹配）。
-- **与 allow 的关系**：`block-default.list` 与 `allow-default.list` 不得出现同一域名；当前 16 条均为广告域，不与音源放行清单重叠。若未来新增，先检查 `comm -12`。
-- **审计要求**：改动本文件必须补 `STRESS-TEST-PLAN.md` 的 block_seed 用例，并验证「用户自定义规则不被覆盖」「marker 防回填」「源列表无命中仍输出 `0.0.0.0`」三条不变量。
+- **与 allow 的关系**：两个 block 清单与 `allow-default.list` 不得出现同一域名；当前 32 条均为广告域，不与音源放行清单重叠。若未来新增，先检查 `comm -12`。
+- **审计要求**：改动任一文件必须补 `STRESS-TEST-PLAN.md` 的 block_seed 用例，并验证「用户自定义规则不被覆盖」「双 marker 防回填」「源列表无命中仍输出 `0.0.0.0`」三条不变量。
 
 ## 3. 核心逻辑（改动前先读）
 
@@ -70,7 +72,7 @@
 |---|---|
 | `list_info()` | 列表元数据与下载地址 |
 | `allow_seed()` | 内置放行清单一次性合并、旧宽泛项迁移 |
-| `block_seed()` | 内置拦截清单一次性合并、marker 防回填 |
+| `block_seed()` / `block_seed_one()` | 基础集 + ADN 补充集两段合并、双 marker 防回填 |
 | `custom_info()` / `custom_ids()` | 自定义 HTTPS 列表 |
 | `AWK_RULES` / `rules_engine` | Allow / Block 规则解析与冲突检测 |
 | `rebuild()` | 生成 hosts、校验、挂载、回滚 |

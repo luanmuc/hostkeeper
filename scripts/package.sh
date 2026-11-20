@@ -25,7 +25,7 @@ ZIP="$OUT_DIR/HostKeeper-$VERSION.zip"
 STAGE=$(mktemp -d "$OUT_DIR/.stage.XXXXXX")
 trap 'rm -rf "$STAGE"' EXIT INT TERM
 
-for f in module.prop customize.sh hostkeeper.sh action.sh service.sh post-mount.sh uninstall.sh allow-default.list block-default.list LICENSE; do
+for f in module.prop customize.sh hostkeeper.sh action.sh service.sh post-mount.sh uninstall.sh allow-default.list block-default.list block-default-adn.list LICENSE; do
   [ -f "$f" ] || { printf 'missing %s\n' "$f" >&2; exit 1; }
   cp -p "$f" "$STAGE/$f"
 done

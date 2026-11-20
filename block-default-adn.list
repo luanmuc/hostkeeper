@@ -1,0 +1,31 @@
+# HostKeeper 内置拦截清单 —— 顺丰同城骑士 ADN 补充规则（v1.1.4）
+# 依据：APK 12.1.0.1 静态取证 + 官方第三方 SDK 清单（2026-11-20）
+# 用途：v1.1.3 的 ToBid/美数/GDT 聚合入口仍不足时，补 Pangle/Gromore、
+#       Sigmob、AdScope/倍孜、Octopus/章鱼、泛为这一层 ADN 请求域。
+# 格式：精确域名，一行一条；不支持 *. 通配。注释与空行不会进入 block.list。
+#
+# —— Pangle / Gromore / 穿山甲 ——
+api-access.pangolin-sdk-toutiao.com
+api-access.pangolin-sdk-toutiao-b.com
+api-access.pangolin-sdk-toutiao1.com
+gromore.pangolin-sdk-toutiao.com
+pangolin.snssdk.com
+is.snssdk.com
+i.snssdk.com
+
+# —— Sigmob 直投 / ToBid 素材 ——
+adservice.sigmob.cn
+dc.sigmob.cn
+tbiu.sigmob.cn
+
+# —— AdScope / 倍孜 ——
+sdk.beizi.biz
+
+# —— Octopus / 章鱼 ——
+sdk.zhangyuyidong.cn
+sdklog.zhangyuyidong.cn
+
+# —— 泛为 ——
+t2.fancyapi.com
+g.fancyapi.com
+mpcfg.fancydsp.com

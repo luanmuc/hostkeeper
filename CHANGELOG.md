@@ -1,3 +1,12 @@
+## v1.1.4（2026-11-20）
+
+- 触发：用户安装 v1.1.3 后顺丰同城骑士开屏广告仍出现。v1.1.3 只覆盖 5 条 ToBid/美数聚合入口 + 11 条 GDT 漏项，未覆盖 Pangle/Gromore、Sigmob、AdScope、Octopus、泛为这一层 ADN；本次按实测反馈补下一层。
+- 新增：随包 `block-default-adn.list`，16 条精确域名——Pangle/Gromore 7 条（`api-access.pangolin-sdk-toutiao.com`、`api-access.pangolin-sdk-toutiao-b.com`、`api-access.pangolin-sdk-toutiao1.com`、`gromore.pangolin-sdk-toutiao.com`、`pangolin.snssdk.com`、`is.snssdk.com`、`i.snssdk.com`）、Sigmob/ToBid 素材 3 条（`adservice.sigmob.cn`、`dc.sigmob.cn`、`tbiu.sigmob.cn`）、AdScope 1 条（`sdk.beizi.biz`）、Octopus 2 条（`sdk.zhangyuyidong.cn`、`sdklog.zhangyuyidong.cn`）、泛为 3 条（`t2.fancyapi.com`、`g.fancyapi.com`、`mpcfg.fancydsp.com`）。与 v1.1.3 的 `block-default.list` 合计 32 条。
+- 合并：`block_seed()` 改为两段独立合并——基础集 `block-default.list` 用 `$BLOCKF.seed-v1`，ADN 补充集用 `$BLOCKF.seed-v2`。v1.1.3 升级后旧 marker 不会阻止新 ADN 规则写入；只补缺失，不覆盖、不重排用户 `block.list`；注释/空行/通配跳过；任一段失败时该段 marker 不写，可下次重试。
+- 版本：v1.1.3 → v1.1.4，versionCode 14 → 15；`module.prop`、`HK_VER` / `HK_VCODE`、`customize.sh`、`app.js`、`index.html` 五处版本串与三处 `?v=` 全部同步。
+- 验证：`check.sh` 全绿；`block_seed` 19/19 PASS（全新 32 条、v1.1.3→v1.1.4 只补 16 条 ADN、v1.1.1→v1.1.4 补 32 条、用户行保留、幂等、去重、末尾换行、缺基础集只补 ADN、双 marker 防回填、通配跳过）；编译回归 6/6 PASS（32 条在源列表无命中时仍输出 `0.0.0.0`）；包 452,307 字节，SHA256 `d87eb7b3b4d6a8505837cad3208fbc82c046dd8427c1c9b1c551ffa7776899cd`；`unzip -t` 通过。
+- 状态：已推送 `main`；tag `v1.1.4`；GitHub Release `v1.1.4` 已发布。真机 v1.1.3→v1.1.4 升级迁移、顺丰骑士实机开屏复测、管理器矩阵、重启/断电、72h/7d 长稳仍 BLOCKED；不能写成“广告已修复”。即使 32 条全部生效，若 App 走 HTTPDNS/IP 直连或 ToBid 缓存瀑布流，hosts 仍可能拦不住。
+
 ## v1.1.3（2026-11-20）
 
 - 新增：随包 `block-default.list`，内置 16 条顺丰同城骑士开屏广告定向拦截域名——5 条聚合入口（`tm.sigmob.cn`、`c.tobidad.cn`、`sdk.1rtb.net`、`c.etoolads.cn`、`dsp.1rtb.com`）+ 11 条腾讯优量汇 GDT 漏项（`c/sc/win/h5/a/v2/c2.gdt.qq.com`、`union.eff.qq.com`、`qzs.gdtimg.com`、`pgdt.ugdtimg.com`、`adsmind.ugdtimg.com`）。依据 APK 12.1.0.1 静态取证与官方第三方 SDK 清单。

@@ -147,6 +147,26 @@ grep -qF '  block_seed' hostkeeper.sh && ok 'ensure_dirs calls block_seed' || ba
 grep -qF '$BLOCKF.seed-v1' hostkeeper.sh && ok 'block seed migration marker present' || bad 'block seed migration marker is missing'
 grep -qF 'block-default.list' scripts/package.sh && ok 'packaging includes block-default.list' || bad 'packaging misses block-default.list'
 
+printf '\nv1.1.4 ADN blocklist delta\n'
+[ -f block-default-adn.list ] && ok 'block-default-adn.list shipped' || bad 'block-default-adn.list is missing'
+N_ADN=$(grep -vcE '^#|^$' block-default-adn.list 2>/dev/null || true)
+N_ADN=${N_ADN:-0}
+[ "$N_ADN" -ge 16 ] && ok "block-default-adn.list has $N_ADN rules" || bad "block-default-adn.list has only $N_ADN rules"
+if grep -qE '^\*\.' block-default-adn.list; then
+  bad 'block-default-adn.list contains wildcard rules'
+else
+  ok 'block-default-adn.list uses exact domains only'
+fi
+grep -qxF 'api-access.pangolin-sdk-toutiao.com' block-default-adn.list && ok 'Pangle request entry present' || bad 'Pangle request entry is missing'
+grep -qxF 'gromore.pangolin-sdk-toutiao.com' block-default-adn.list && ok 'Gromore request entry present' || bad 'Gromore request entry is missing'
+grep -qxF 'adservice.sigmob.cn' block-default-adn.list && ok 'Sigmob request entry present' || bad 'Sigmob request entry is missing'
+grep -qxF 'sdk.beizi.biz' block-default-adn.list && ok 'AdScope request entry present' || bad 'AdScope request entry is missing'
+grep -qxF 'sdk.zhangyuyidong.cn' block-default-adn.list && ok 'Octopus request entry present' || bad 'Octopus request entry is missing'
+grep -qxF 'mpcfg.fancydsp.com' block-default-adn.list && ok 'Fanwei config entry present' || bad 'Fanwei config entry is missing'
+grep -qF 'BLOCKD2=$MODDIR/block-default-adn.list' hostkeeper.sh && ok 'BLOCKD2 points at the shipped ADN list' || bad 'BLOCKD2 path is wrong'
+grep -qF '$BLOCKF.seed-v2' hostkeeper.sh && ok 'ADN seed marker present' || bad 'ADN seed marker is missing'
+grep -qF 'block-default-adn.list' scripts/package.sh && ok 'packaging includes block-default-adn.list' || bad 'packaging misses block-default-adn.list'
+
 printf '\nv1.1.1 final contract\n'
 
 grep -qF 'source_error_text' hostkeeper.sh && ok 'source failure text mapping present' || bad 'source failure text mapping is missing'

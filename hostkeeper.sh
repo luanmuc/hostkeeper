@@ -19,8 +19,8 @@ umask 022
 PATH=/system/bin:/system/xbin:/vendor/bin:${PATH:-/bin}
 export PATH
 
-HK_VER=v1.1.3
-HK_VCODE=14
+HK_VER=v1.1.4
+HK_VCODE=15
 SELF=$0
 case $SELF in /*) ;; *) SELF=$(pwd)/$SELF ;; esac
 MODDIR=${HK_MODDIR:-${SELF%/*}}
@@ -37,6 +37,7 @@ RULESD=$DATA/rules
 ALLOWF=$RULESD/allow.list
 ALLOWD=$MODDIR/allow-default.list
 BLOCKD=$MODDIR/block-default.list
+BLOCKD2=$MODDIR/block-default-adn.list
 BLOCKF=$RULESD/block.list
 CACHED=$DATA/cache
 LISTSD=$CACHED/lists
@@ -647,12 +648,12 @@ ensure_dirs() {
   block_seed
 }
 
-block_seed() {
-  # 内置拦截清单合并。只写入精确域名规则行，注释/空行/通配不进入 block.list；
+block_seed_one() {
+  # 单份内置拦截清单合并。只写入精确域名规则行，注释/空行/通配不进入 block.list；
   # 空文件补齐全部规则，已有内容只补缺失条目，用户自定义规则永远保留。
-  [ -f "$BLOCKD" ] || return 0
-  [ -f "$BLOCKF" ] || : > "$BLOCKF" 2>/dev/null
-  _bs_mig=$BLOCKF.seed-v1
+  _bs_list=$1
+  _bs_mig=$2
+  [ -f "$_bs_list" ] || return 0
   [ -f "$_bs_mig" ] && return 0
   _bs_n=0
   _bs_fail=0
@@ -669,13 +670,22 @@ block_seed() {
         _bs_fail=1
       fi
     fi
-  done < "$BLOCKD"
+  done < "$_bs_list"
   if [ "$_bs_fail" = 0 ]; then
     : > "$_bs_mig" 2>/dev/null || _bs_fail=1
   fi
   if [ "$_bs_fail" = 0 ] && [ "$_bs_n" -gt 0 ] && command -v log >/dev/null 2>&1; then
     log I "block_seed: 补入 $_bs_n 条内置拦截"
   fi
+  return 0
+}
+
+block_seed() {
+  # v1.1.3 基础集 + v1.1.4 ADN 补充集。两份 marker 独立，
+  # 旧 seed-v1 不会阻止新版 ADN 规则写入；任一份失败可下次重试。
+  [ -f "$BLOCKF" ] || : > "$BLOCKF" 2>/dev/null
+  block_seed_one "$BLOCKD" "$BLOCKF.seed-v1"
+  block_seed_one "$BLOCKD2" "$BLOCKF.seed-v2"
   return 0
 }
 
