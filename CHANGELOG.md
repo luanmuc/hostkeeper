@@ -1,3 +1,21 @@
+## v1.1.3（2026-11-20）
+
+- 新增：随包 `block-default.list`，内置 16 条顺丰同城骑士开屏广告定向拦截域名——5 条聚合入口（`tm.sigmob.cn`、`c.tobidad.cn`、`sdk.1rtb.net`、`c.etoolads.cn`、`dsp.1rtb.com`）+ 11 条腾讯优量汇 GDT 漏项（`c/sc/win/h5/a/v2/c2.gdt.qq.com`、`union.eff.qq.com`、`qzs.gdtimg.com`、`pgdt.ugdtimg.com`、`adsmind.ugdtimg.com`）。依据 APK 12.1.0.1 静态取证与官方第三方 SDK 清单。
+- 合并：`ensure_dirs()` 新增 `block_seed()`。只用精确域名规则行追加到 `block.list`，注释/空行/通配不写入；空文件补齐 16 条，已有内容只补缺失，用户自定义规则逐字保留；首次合并成功写 `$BLOCKF.seed-v1`，之后手动删除规则不会被再次补回。
+- 保留：v1.1.2 的 `allow-default.list` 收窄（删除 `*.qq.com` / `*.163.com`，QQ/网易只放行音乐业务子域）与 `allow_seed()` 的 `$ALLOWF.seed-v2` 迁移一并进入本版；v1.1.2 不单独发布。
+- 版本：v1.1.2 → v1.1.3，versionCode 13 → 14；`module.prop`、`HK_VER` / `HK_VCODE`、`customize.sh`、`app.js`、`index.html` 五处版本串与三处 `?v=` 全部同步。
+- 验证：`check.sh` 全绿；`block_seed` 14/14 PASS（全新 16 条、注释/空行不写入、用户行保留、幂等、去重、末尾换行、缺文件静默、marker 防回填、通配跳过）；编译回归 5/5 PASS（16 条内置拦截在源列表无命中时仍输出 `0.0.0.0`）；UI/后端/向导等历史回归保持通过。
+- 状态：本地构建并验证；真机升级迁移、顺丰骑士实机开屏复测、72h/7d 长稳仍 BLOCKED，不能写成已验证。
+
+## v1.1.2（2026-11-20）
+
+- 修复：v1.1.1 的 `allow-default.list` 使用 `*.qq.com` / `*.163.com` 整域放行，覆盖 StevenBlack 中的腾讯优量汇、Gromore 广告域（如 `e.qq.com`、`*.gdt.qq.com`），导致顺丰同城骑士等接入腾讯广告 SDK 的应用仍能加载开屏广告。用户截图确认模块已启用且 76,005 域名生效，问题不在模块未运行。
+- 收窄：QQ 音乐只保留 `y.qq.com`、`*.y.qq.com`、`qqmusic.qq.com`、`*.qqmusic.qq.com`、`aqqmusic.tc.qq.com`；网易云音乐只保留 `music.163.com`、`*.music.163.com`、`u.y.163.com`；其余酷我 / 酷狗 / 咪咕 / 126 / 第三方源不变。清单由 17 条增至 23 条。
+- 迁移：`allow_seed()` 增加一次性迁移标记 `$ALLOWF.seed-v2`；升级到 v1.1.2 后首次运行删除旧 `allow.list` 中逐行精确匹配的 `*.qq.com` / `*.163.com`，再按原有逐行补入逻辑补齐窄规则。迁移失败不写标记，可下次重试；用户其他规则保留。
+- 版本：v1.1.1 → v1.1.2，versionCode 12 → 13；`module.prop`、`HK_VER` / `HK_VCODE`、`customize.sh`、`app.js`、`index.html` 五处版本串与三处 `?v=` 全部同步。
+- 验证：`check.sh` 全绿；allow_seed 12/12 PASS（新增旧宽泛项迁移用例）；QQ/网易音乐 6 个正例 ALLOW、腾讯广告 2 个反例 BLOCK；UI 22/22、操作 13/13、首次向导 28/28、Bridge 3/3、源防护 37/37、下载防护 6/6、后端 10/10、诊断互斥 PASS、镜像回退 PASS、100k 454ms。
+- 状态：本地构建并验证；真机/长稳未执行。发布状态以 GitHub Releases 页为准。
+
 ## v1.1.1（2026-11-20）
 
 - 内置放行清单：新增随包文件 `allow-default.list`，覆盖豆包定制聚合音源（lx-music-mobile）全链域名——音乐平台主站与 API（`*.163.com` / `*.qq.com` / `*.kuwo.cn` / `*.kugou.com` / `*.migu.cn`）、播放 CDN（`*.126.net`）、第三方聚合与中转源（`*.oiapi.net` / `*.lzmhhh.com` / `*.zddyr.top` / `*.haitangw.cc` / `*.haitangw.net` / `*.gdstudio.xyz` / `*.onrender.com` / `*.xcvts.cn` / `*.dpdns.org` / `*.lingchuan.com` / `*.wwwweb.top`），合计 17 条规则。

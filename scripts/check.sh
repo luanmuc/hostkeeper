@@ -112,7 +112,43 @@ else
   ok 'no legacy English UI copy'
 fi
 
+printf '\nv1.1.2 allowlist scope contract\n'
+[ "$(grep -vcE '^#|^$' allow-default.list)" -ge 20 ] && ok 'allow-default.list has at least 20 narrow rules' || bad 'allow-default.list is too small'
+if grep -qxF '*.qq.com' allow-default.list || grep -qxF '*.163.com' allow-default.list; then
+  bad 'allow-default.list still has broad qq.com/163.com rules'
+else
+  ok 'allow-default.list has no broad qq.com/163.com rules'
+fi
+grep -qxF '*.y.qq.com' allow-default.list && ok 'QQ Music subdomain allow rule present' || bad 'QQ Music allow rule is missing'
+grep -qxF '*.music.163.com' allow-default.list && ok 'NetEase Music subdomain allow rule present' || bad 'NetEase Music allow rule is missing'
+grep -qF 'ALLOWF.seed-v2' hostkeeper.sh && ok 'legacy broad allow migration marker present' || bad 'legacy broad allow migration marker is missing'
+grep -qF "grep -vxF -e '*.qq.com' -e '*.163.com'" hostkeeper.sh && ok 'legacy broad allow cleanup present' || bad 'legacy broad allow cleanup is missing'
+
+printf '\nv1.1.3 blocklist scope contract\n'
+[ -f block-default.list ] && ok 'block-default.list shipped' || bad 'block-default.list is missing'
+N_BLOCK=$(grep -vcE '^#|^$' block-default.list 2>/dev/null || true)
+N_BLOCK=${N_BLOCK:-0}
+[ "$N_BLOCK" -ge 16 ] && ok "block-default.list has $N_BLOCK rules" || bad "block-default.list has only $N_BLOCK rules"
+if grep -qE '^\*\.' block-default.list; then
+  bad 'block-default.list contains wildcard rules'
+else
+  ok 'block-default.list uses exact domains only'
+fi
+grep -qxF 'tm.sigmob.cn' block-default.list && ok 'ToBid waterfall entry present' || bad 'ToBid waterfall entry is missing'
+grep -qxF 'c.tobidad.cn' block-default.list && ok 'ToBid config entry present' || bad 'ToBid config entry is missing'
+grep -qxF 'sdk.1rtb.net' block-default.list && ok 'Meishu request entry present' || bad 'Meishu request entry is missing'
+grep -qxF 'c.etoolads.cn' block-default.list && ok 'Meishu config entry present' || bad 'Meishu config entry is missing'
+grep -qxF 'dsp.1rtb.com' block-default.list && ok 'Meishu DSP entry present' || bad 'Meishu DSP entry is missing'
+grep -qxF 'c.gdt.qq.com' block-default.list && ok 'GDT c entry present' || bad 'GDT c entry is missing'
+grep -qxF 'adsmind.ugdtimg.com' block-default.list && ok 'GDT material entry present' || bad 'GDT material entry is missing'
+grep -qF 'BLOCKD=$MODDIR/block-default.list' hostkeeper.sh && ok 'BLOCKD points at the shipped list' || bad 'BLOCKD path is wrong'
+grep -qF 'block_seed' hostkeeper.sh && ok 'block_seed merge function present' || bad 'block_seed is missing'
+grep -qF '  block_seed' hostkeeper.sh && ok 'ensure_dirs calls block_seed' || bad 'ensure_dirs does not call block_seed'
+grep -qF '$BLOCKF.seed-v1' hostkeeper.sh && ok 'block seed migration marker present' || bad 'block seed migration marker is missing'
+grep -qF 'block-default.list' scripts/package.sh && ok 'packaging includes block-default.list' || bad 'packaging misses block-default.list'
+
 printf '\nv1.1.1 final contract\n'
+
 grep -qF 'source_error_text' hostkeeper.sh && ok 'source failure text mapping present' || bad 'source failure text mapping is missing'
 grep -qF '\"altHost\":' hostkeeper.sh && ok 'list source exposes alt host' || bad 'list source alt host field is missing'
 grep -qF '\"hasAlt\":' hostkeeper.sh && ok 'list source exposes hasAlt' || bad 'list source hasAlt field is missing'
@@ -178,7 +214,7 @@ if [ -n "${VER:-}" ] && [ -n "${VCODE:-}" ]; then
 fi
 
 printf '\nModule files\n'
-for f in module.prop customize.sh hostkeeper.sh action.sh service.sh post-mount.sh uninstall.sh \
+for f in module.prop customize.sh hostkeeper.sh action.sh service.sh post-mount.sh uninstall.sh block-default.list \
          system/etc/hosts webroot/index.html webroot/app.js webroot/style.css webroot/theme.js \
          META-INF/com/google/android/update-binary META-INF/com/google/android/updater-script; do
   [ -e "$f" ] && ok "$f" || bad "missing $f"

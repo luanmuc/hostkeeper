@@ -3,10 +3,18 @@
 # 把其 API 域名与播放 CDN 域名一并补到这里，避免被第三方拦截列表误杀。
 # 格式：以 *. 开头 = 后缀通配（含所有子域）；其余 = 精确匹配。
 # 本清单只补进 allow.list，绝不覆盖用户自己添加的规则。
+# v1.1.2：QQ/网易只放行音乐业务实际子域，禁止整域放行；避免把 e.qq.com、
+# *.gdt.qq.com 等腾讯广告域一起白名单。
 
 # —— 音乐平台主站与 API ——
-*.163.com
-*.qq.com
+y.qq.com
+*.y.qq.com
+qqmusic.qq.com
+*.qqmusic.qq.com
+aqqmusic.tc.qq.com
+music.163.com
+*.music.163.com
+u.y.163.com
 *.kuwo.cn
 *.kugou.com
 *.migu.cn

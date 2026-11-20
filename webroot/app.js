@@ -2,8 +2,8 @@
   'use strict';
 
   const MOD = '/data/adb/modules/hostkeeper';
-  const VERSION = 'v1.1.1';
-  const VERSION_CODE = 12;
+  const VERSION = 'v1.1.3';
+  const VERSION_CODE = 14;
   const RULE_MAX = 1000;
   const LEVEL = { green: '🟢', blue: '🔵', yellow: '🟡', orange: '🟠', red: '🔴' };
   const STEPS = [

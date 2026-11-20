@@ -45,15 +45,32 @@
 - **合并入口**：`ensure_dirs()` 末尾调用 `allow_seed()`。
   - `allow.list` 为空 → 写入全部域名规则行（过滤注释/空行）。
   - 已有内容 → 逐行 `grep -qxF --` 检查，只追加缺失条目，补入条数写日志；**用户自定义规则永不覆盖、不重排**。
+  - v1.1.2 起带一次性迁移标记 `$ALLOWF.seed-v2`：首次运行先删除旧版本写入的 `*.qq.com` / `*.163.com` 两个整域项，再补齐窄规则；迁移成功才创建标记，失败可重试。用户自己写的同名整域项也会被删除，这是有意行为——整域放行会覆盖腾讯优量汇/Gromore 广告域。
 - **格式**：`*.` 前缀是后缀通配（`*.kuwo.cn` 覆盖 `bd-er.kuwo.cn` 等全部子域）；不带 `*.` 是精确匹配。
+- **禁止整域放行**：QQ / 网易只允许音乐业务子域（`y.qq.com`、`*.y.qq.com`、`qqmusic.qq.com`、`*.qqmusic.qq.com`、`aqqmusic.tc.qq.com`；`music.163.com`、`*.music.163.com`、`u.y.163.com`）。不得再添加 `*.qq.com` / `*.163.com`，否则会放行 `e.qq.com`、`*.gdt.qq.com` 等腾讯广告域。
 - **维护约定**：`lx-music-mobile` 聚合音源仓库（`backend-api`）新增或更换源时，必须同步补这里——API 域名与播放 CDN 域名都要加，否则会被列表误杀。
 - **审计要求**：改动本文件必须在 `STRESS-TEST-PLAN.md` 补对应用例，并验证「用户自定义规则不被覆盖」这条不变量。
+
+### 2.2 内置拦截清单 `block-default.list`
+
+随包文件，与 `module.prop` 同级；`hostkeeper.sh` 里对应 `BLOCKD=$MODDIR/block-default.list`。
+
+- **用途**：把已知的顺丰同城骑士开屏广告聚合入口与腾讯 GDT 漏项预置为精确拦截域，避免只收窄 `*.qq.com` 后仍被 ToBid / 美数 / GDT 其它域名放行。
+- **合并入口**：`ensure_dirs()` 末尾在 `allow_seed()` 之后调用 `block_seed()`。
+  - `block.list` 为空 → 写入全部 16 条精确域名规则（过滤注释/空行/通配）。
+  - 已有内容 → 逐行 `grep -qxF --` 检查，只追加缺失条目；**用户自定义规则永不覆盖、不重排**。
+  - 首次合并成功写一次性 marker `$BLOCKF.seed-v1`；之后用户手动删除某条内置规则，不会被再次补回。要重新补齐，删除 marker 后重跑 `block_seed()`。
+- **格式**：只支持精确域名，一行一条；`*.` 通配会被 `block_seed()` 跳过（`block.list` 本身只做精确匹配）。
+- **与 allow 的关系**：`block-default.list` 与 `allow-default.list` 不得出现同一域名；当前 16 条均为广告域，不与音源放行清单重叠。若未来新增，先检查 `comm -12`。
+- **审计要求**：改动本文件必须补 `STRESS-TEST-PLAN.md` 的 block_seed 用例，并验证「用户自定义规则不被覆盖」「marker 防回填」「源列表无命中仍输出 `0.0.0.0`」三条不变量。
 
 ## 3. 核心逻辑（改动前先读）
 
 | 函数/区块 | 作用 |
 |---|---|
 | `list_info()` | 列表元数据与下载地址 |
+| `allow_seed()` | 内置放行清单一次性合并、旧宽泛项迁移 |
+| `block_seed()` | 内置拦截清单一次性合并、marker 防回填 |
 | `custom_info()` / `custom_ids()` | 自定义 HTTPS 列表 |
 | `AWK_RULES` / `rules_engine` | Allow / Block 规则解析与冲突检测 |
 | `rebuild()` | 生成 hosts、校验、挂载、回滚 |

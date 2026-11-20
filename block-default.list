@@ -1,0 +1,26 @@
+# HostKeeper 内置拦截清单 —— 顺丰同城骑士开屏广告定向规则
+# 依据：APK 12.1.0.1 静态取证 + 官方第三方 SDK 清单（2026-11-20）
+# 格式：精确域名，一行一条；不支持 *. 通配。注释与空行不会进入 block.list。
+#
+# —— 聚合入口（ToBid / 美数）——
+# 阻断 ToBid 瀑布流/配置与美数 1rtb 配置、请求入口；先从上游停止选广告。
+tm.sigmob.cn
+c.tobidad.cn
+sdk.1rtb.net
+c.etoolads.cn
+dsp.1rtb.com
+
+# —— 腾讯优量汇 GDT 漏项 ——
+# StevenBlack 已覆盖 mi/v/e/sdk.e.qq.com；以下 11 条是仍可用的 GDT 请求/素材域，
+# 在 v1.1.2 删除 *.qq.com 放行后仍需显式拦截。
+c.gdt.qq.com
+sc.gdt.qq.com
+win.gdt.qq.com
+h5.gdt.qq.com
+a.gdt.qq.com
+v2.gdt.qq.com
+c2.gdt.qq.com
+union.eff.qq.com
+qzs.gdtimg.com
+pgdt.ugdtimg.com
+adsmind.ugdtimg.com

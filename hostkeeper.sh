@@ -19,8 +19,8 @@ umask 022
 PATH=/system/bin:/system/xbin:/vendor/bin:${PATH:-/bin}
 export PATH
 
-HK_VER=v1.1.1
-HK_VCODE=12
+HK_VER=v1.1.3
+HK_VCODE=14
 SELF=$0
 case $SELF in /*) ;; *) SELF=$(pwd)/$SELF ;; esac
 MODDIR=${HK_MODDIR:-${SELF%/*}}
@@ -36,6 +36,7 @@ STATF=$DATA/stats
 RULESD=$DATA/rules
 ALLOWF=$RULESD/allow.list
 ALLOWD=$MODDIR/allow-default.list
+BLOCKD=$MODDIR/block-default.list
 BLOCKF=$RULESD/block.list
 CACHED=$DATA/cache
 LISTSD=$CACHED/lists
@@ -643,6 +644,39 @@ ensure_dirs() {
   [ -f "$ALLOWF" ] || : > "$ALLOWF"
   [ -f "$BLOCKF" ] || : > "$BLOCKF"
   allow_seed
+  block_seed
+}
+
+block_seed() {
+  # 内置拦截清单合并。只写入精确域名规则行，注释/空行/通配不进入 block.list；
+  # 空文件补齐全部规则，已有内容只补缺失条目，用户自定义规则永远保留。
+  [ -f "$BLOCKD" ] || return 0
+  [ -f "$BLOCKF" ] || : > "$BLOCKF" 2>/dev/null
+  _bs_mig=$BLOCKF.seed-v1
+  [ -f "$_bs_mig" ] && return 0
+  _bs_n=0
+  _bs_fail=0
+  while IFS= read -r _bs_l; do
+    case $_bs_l in '' | '#'*) continue ;; esac
+    case $_bs_l in *'*'*) continue ;; esac
+    if ! grep -qxF -- "$_bs_l" "$BLOCKF" 2>/dev/null; then
+      if [ -s "$BLOCKF" ] && [ -n "$(tail -c 1 "$BLOCKF" 2>/dev/null)" ]; then
+        printf '\n' >> "$BLOCKF" 2>/dev/null || _bs_fail=1
+      fi
+      if printf '%s\n' "$_bs_l" >> "$BLOCKF" 2>/dev/null; then
+        _bs_n=$((_bs_n + 1))
+      else
+        _bs_fail=1
+      fi
+    fi
+  done < "$BLOCKD"
+  if [ "$_bs_fail" = 0 ]; then
+    : > "$_bs_mig" 2>/dev/null || _bs_fail=1
+  fi
+  if [ "$_bs_fail" = 0 ] && [ "$_bs_n" -gt 0 ] && command -v log >/dev/null 2>&1; then
+    log I "block_seed: 补入 $_bs_n 条内置拦截"
+  fi
+  return 0
 }
 
 allow_seed() {
@@ -650,6 +684,25 @@ allow_seed() {
   # 空文件补齐全部规则，已有内容只补缺失条目，用户自定义规则永远保留。
   [ -f "$ALLOWD" ] || return 0
   [ -f "$ALLOWF" ] || : > "$ALLOWF" 2>/dev/null
+  # v1.1.2 迁移：v1.1.1 的整域放行项会连广告域一起放行，首次运行清理一次。
+  _as_mig=$ALLOWF.seed-v2
+  if [ ! -f "$_as_mig" ]; then
+    _as_tmp=$ALLOWF.seedtmp.$$
+    if grep -vxF -e '*.qq.com' -e '*.163.com' "$ALLOWF" > "$_as_tmp" 2>/dev/null; then
+      _as_rc=0
+    else
+      _as_rc=$?
+    fi
+    if [ "$_as_rc" -eq 0 ] || [ "$_as_rc" -eq 1 ]; then
+      if mv -f "$_as_tmp" "$ALLOWF" 2>/dev/null; then
+        : > "$_as_mig" 2>/dev/null
+      else
+        rm -f "$_as_tmp" 2>/dev/null
+      fi
+    else
+      rm -f "$_as_tmp" 2>/dev/null
+    fi
+  fi
   _as_n=0
   while IFS= read -r _as_l; do
     case $_as_l in '' | '#'*) continue ;; esac
