@@ -1,7 +1,7 @@
 #!/system/bin/sh
 
 HK_VER=$(sed -n 's/^version=//p' "$MODPATH/module.prop" 2>/dev/null | head -n 1)
-[ -n "$HK_VER" ] || HK_VER=v1.0.8
+[ -n "$HK_VER" ] || HK_VER=v1.0.9
 
 ui_print " "
 ui_print "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

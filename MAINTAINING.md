@@ -119,12 +119,14 @@ grep -nE '?v=|id="ver"' webroot/index.html
 
 - 所有会 await 后端的按钮必须用 `apiTimeout()` 或 `try/finally`，失败/超时后恢复按钮、`S.syncBusy`、进度条。
 - 健康检查 `showDiag()` 不再设置 `disabled`；用 `showDiag.seq` 丢弃过期响应，关闭弹窗后可以重新发起。
-- 后端卡住时前端只负责恢复可点，不取消后端进程；重试可能产生并发请求，服务端仍需保证幂等/锁。
+- 后端卡住时前端只负责恢复可点，不取消后端进程；服务端用 `$RUND/diag.lock` 做诊断互斥，重复请求返回 `diag_busy`，不会并发跑 `cmd_diag()`。
 - 自定义列表「添加列表」按钮的 disabled 必须同时考虑 busy 和数量上限，busy 结束后由 `applyBusy()` 重新计算，不能只置 true。
 - 规则导入等多批次操作必须 `try/finally` 释放 `S.syncBusy`，单批失败要 break 并显示错误。
-- `scripts/check.sh` 校验 `apiTimeout`、健康检查超时、过期响应保护、自定义列表恢复和规则导入 busy 收口。
+- `scripts/check.sh` 校验 `apiTimeout`、健康检查超时、过期响应保护、诊断日志/互斥、首次重启文案、自定义列表恢复和规则导入 busy 收口。
 - 健康检查的后端网络探测 `cmd_diag()` 使用 `DL_MAX_TIME=20` 限制单次 peek；前端 `showDiag()` 超时为 25 秒，后端应先返回失败原因而不是让前端只看到泛化超时。
-- `#act-diag` 使用 document 级 `closest(
+- `cmd_diag()` 入口写 `健康检查开始`，出口写 `健康检查完成（ok/warn/err，耗时）`；网络探测失败、下载工具缺失分别写 WARN/ERROR，日志最多保留 500 条。
+- 首次安装或 hosts 尚未挂载时，待重启文案必须说明“重启一次完成挂载；之后切换开关和列表可即时生效”，不要只写“重启后生效”。
+- `#act-diag` 使用 document 级 `closest('#act-diag')` 点击委托；不要只绑定按钮本身，否则 WebView 子元素点击或旧页面绑定失效会表现为“点了没反应”。
 
 ## 9. 管理器适配与检测边界
 

@@ -2,8 +2,8 @@
   'use strict';
 
   const MOD = '/data/adb/modules/hostkeeper';
-  const VERSION = 'v1.0.8';
-  const VERSION_CODE = 9;
+  const VERSION = 'v1.0.9';
+  const VERSION_CODE = 10;
   const RULE_MAX = 1000;
   const LEVEL = { green: '🟢', blue: '🔵', yellow: '🟡', orange: '🟠', red: '🔴' };
   const STEPS = [
@@ -618,7 +618,7 @@
     if (!st) return { cls: 'is-wait', e: '⏳', t: '加载中…' };
     if (st.setup === 'pending') return { cls: 'is-wait', e: '⏳', t: '等待初始化' };
     if (st.setup === 'failed') return { cls: 'is-off', e: '❌', t: '初始化失败' };
-    if (st.reboot) return { cls: 'is-warn', e: '🟡', t: '需要重启' };
+    if (st.reboot) return { cls: 'is-warn', e: '🟡', t: '待重启生效' };
     if (!st.enabled) return { cls: 'is-off', e: '🔴', t: '已停用' };
     if (st.applied === 'overridden') return { cls: 'is-warn', e: '⚠️', t: '被覆盖' };
     if (st.applied === 'inactive') return { cls: 'is-off', e: '🔴', t: '未生效' };
@@ -627,7 +627,7 @@
 
   function appliedText(a) {
     if (a === 'applied') return ['✅ 已生效', 'is-ok'];
-    if (a === 'pending') return ['🟡 尚未生效，需要重启', 'is-warn'];
+    if (a === 'pending') return ['🟡 待重启完成挂载', 'is-warn'];
     if (a === 'overridden') return ['⚠️ 被其他模块覆盖', 'is-warn'];
     if (a === 'inactive') return ['🔴 未生效，重启后激活', 'is-err'];
     return ['ℹ️ 无法检查系统 hosts 文件', ''];
@@ -693,7 +693,7 @@
     else if (st.applied === 'inactive' && st.enabled && st.setup === 'ready') mode = 'inactive';
     if (mode) {
       const texts = {
-        reboot: ['🟡 重启后生效', '🟡 需要重启'],
+        reboot: ['🟡 重启一次完成挂载', '🟡 待重启'],
         inactive: ['🔴 重启后激活', '🔴 未生效'],
         setup: st.setup === 'failed' ? ['❌ 首次下载失败', '❌ 下载失败'] : ['⏳ 首个列表尚未下载', '⏳ 等待初始化']
       };
@@ -722,7 +722,7 @@
       sub.textContent = st.reboot ? '重启后将停止拦截' : '拦截已关闭';
     } else {
       count.appendChild(h('span', { class: 'num', text: fmtNum(st.domains) }));
-      if (st.reboot) sub.textContent = '域名已就绪，重启后生效';
+      if (st.reboot) sub.textContent = st.live ? '首次安装需重启一次；之后切换即时生效' : '域名已就绪，重启后生效';
       else if (st.applied === 'overridden') sub.textContent = '域名已就绪，但被其他模块覆盖';
       else if (st.applied === 'inactive') sub.textContent = '域名已就绪，重启后激活';
       else sub.textContent = '已全系统拦截域名';
@@ -1607,7 +1607,7 @@
         handleOp(r.data.op);
         schedulePoll(400);
       } else if (r.ok && r.code === 'enabled' && r.data && r.data.live === false) {
-        toast(r.message + ' 首次安装或系统尚未挂载时需要重启一次；重启后切换可即时生效。', 'warn');
+        toast(r.message + ' 首次安装或系统尚未挂载 hosts 时，重启一次即可完成挂载；之后切换开关和列表可即时生效。', 'warn');
       } else {
         toast(r.message, r.ok ? 'ok' : 'err');
       }
@@ -1684,7 +1684,7 @@
         body.push(note('⚠️ 以下模块也会替换 /system/etc/hosts：' + names + '。请停用它们，HostKeeper 才能正常工作。', 'warn'));
       }
       if (st.adaway) body.push(note('⚠️ 检测到 AdAway。请不要同时使用它的 root 或 systemless 模式与 HostKeeper。', 'warn'));
-      if (st.applied === 'pending') body.push(note('🔁 最新更改已保存，将在重启后生效。'));
+      if (st.applied === 'pending') body.push(note('🔁 更改已保存，需要重启后生效。首次安装或系统尚未挂载 hosts 时，重启一次即可完成挂载；之后切换开关可即时生效。'));
       if (st.applied === 'inactive') {
         body.push(note(st.mount === 'failed'
           ? '🔴 Android 未使用 HostKeeper 的 hosts 文件，且开机挂载失败。请查看 📜 日志 了解详情。'
@@ -1791,6 +1791,10 @@
       r = { ok: false, code: 'bridge', message: '❌ 健康检查请求失败：' + ((e && e.message) || e), data: {} };
     }
     if (seq !== showDiag.seq || Modal.view() !== 'diag') return;
+    if (!r.ok && r.code === 'diag_busy') {
+      Modal.show({ icon: '⏳', title: '健康检查正在进行', body: [para(stripLead(r.message), 'center')], view: 'result', actions: gotIt() });
+      return;
+    }
     if (!r.ok) {
       Modal.show({ icon: '❌', title: '健康检查失败', body: [para(stripLead(r.message), 'center')], view: 'result', actions: gotIt() });
       return;

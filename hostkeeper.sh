@@ -19,8 +19,8 @@ umask 022
 PATH=/system/bin:/system/xbin:/vendor/bin:${PATH:-/bin}
 export PATH
 
-HK_VER=v1.0.8
-HK_VCODE=9
+HK_VER=v1.0.9
+HK_VCODE=10
 SELF=$0
 case $SELF in /*) ;; *) SELF=$(pwd)/$SELF ;; esac
 MODDIR=${HK_MODDIR:-${SELF%/*}}
@@ -47,6 +47,7 @@ TMPD=$DATA/tmp
 STAGED=$TMPD/stage
 LOCKD=$RUND/lock
 METALOCK=$RUND/meta.lock
+DIAGLOCK=$RUND/diag.lock
 OPF=$RUND/op
 SCHEDPID=$RUND/sched.pid
 SCHEDRETRY=$RUND/sched.retry
@@ -3341,6 +3342,13 @@ diag_add() {
 }
 
 cmd_diag() {
+  if ! lock_take "$DIAGLOCK"; then
+    log WARN "健康检查被忽略：上一次诊断仍在运行"
+    reply false diag_busy '⏳ 健康检查正在进行，请稍后重试。'
+    return 0
+  fi
+  _dg_t0=$(now)
+  log INFO "健康检查开始（WebUI 请求，HostKeeper $HK_VER）"
   DG=; DG_OK=0; DG_WARN=0; DG_ERR=0
   cfg_load
   _dg_name=$L_NAME
@@ -3452,12 +3460,15 @@ cmd_diag() {
     if dl_get "$_dg_url" "$TMPD/diag.body" "$TMPD/diag.hdr" peek; then
       diag_add ok network '🌐 列表服务器' "可访问（HTTP $DL_CODE）。"
     else
-      diag_add warn network '🌐 列表服务器' "无法连接 $_dg_name 的服务器：$(dl_reason)。"
+      _dg_net_why=$(dl_reason)
+      diag_add warn network '🌐 列表服务器' "无法连接 $_dg_name 的服务器：$_dg_net_why。"
+      log WARN "健康检查网络探测失败：$_dg_name：$_dg_net_why"
     fi
     DL_MAX_TIME=
     rm -f "$TMPD/diag.body" "$TMPD/diag.hdr" "$TMPD/diag.hdr.err"
   else
     diag_add err downloader '⬇️ 下载工具' 'curl 和 BusyBox wget 都不可用，无法下载列表。'
+    log ERROR "健康检查失败：curl 和 BusyBox wget 都不可用"
   fi
 
   if [ "$HK_BB" = none ]; then
@@ -3495,6 +3506,8 @@ cmd_diag() {
   [ -n "$MGR_VER" ] && _dg_v=" $MGR_VER"
   diag_add info environment '📦 运行环境' "HostKeeper $HK_VER ($HK_VCODE)，运行于 $MGR_NAME$_dg_v，Android $(getprop ro.build.version.release 2>/dev/null)。"
 
+  log INFO "健康检查完成：ok=$DG_OK warn=$DG_WARN err=$DG_ERR，耗时 $(( $(now) - _dg_t0 )) 秒"
+  lock_drop "$DIAGLOCK"
   reply true diag '' "{\"checks\":[${DG%,}],\"summary\":{\"ok\":$DG_OK,\"warn\":$DG_WARN,\"err\":$DG_ERR}}"
 }
 
